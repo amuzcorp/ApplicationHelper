@@ -1,8 +1,8 @@
 <?php
 namespace Amuz\XePlugin\ApplicationHelper;
 
-use Amuz\Plugin\ApplicationHelper\Models\AhUserToken;
 use Amuz\XePlugin\ApplicationHelper\BaseObject;
+use Amuz\XePlugin\ApplicationHelper\Models\AhUserToken;
 use App\Http\Controllers\Auth\AuthController;
 use Illuminate\Foundation\Auth\AuthenticatesUsers;
 use Illuminate\Http\Request;
@@ -11,6 +11,7 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
 use XeFrontend;
 use XePresenter;
 use App\Http\Controllers\Controller as BaseController;
+use Xpressengine\Keygen\Keygen;
 use Xpressengine\User\EmailBroker;
 use Xpressengine\User\Guard;
 use Xpressengine\User\Models\User;
@@ -20,6 +21,13 @@ class Controller extends BaseController
 {
 
     use AuthenticatesUsers;
+
+    /**
+     * key generator instance
+     *
+     * @var Keygen
+     */
+    protected $keygen;
 
     /**
      * The Guard implementation.
@@ -40,12 +48,13 @@ class Controller extends BaseController
 
     protected $authController;
 
-    public function __construct()
+    public function __construct(Keygen $keygen)
     {
         $this->auth = app('auth');
         $this->handler = app('xe.user');
         $this->emailBroker = app('xe.auth.email');
         $this->authController = new AuthController();
+        $this->keygen = $keygen;
     }
 
     public function index()
@@ -73,13 +82,13 @@ class Controller extends BaseController
         $retObj = new BaseObject();
 
         $deviceInfo = [
-            'device_name' => $request->header('X_AMUZ_DEVICE_NAME'),
-            'device_version' => $request->header('X_AMUZ_DEVICE_VERSION'),
-            'device_id' => $request->header('X_AMUZ_DEVICE_UUID'),
+            'device_name' => $request->header('X-AMUZ-DEVICE-NAME'),
+            'device_version' => $request->header('X-AMUZ-DEVICE-VERSION'),
+            'device_id' => $request->header('X-AMUZ-DEVICE-UUID'),
         ];
-        foreach($deviceInfo as $val){
+        foreach($deviceInfo as $key => $val){
             if($val == null){
-                $retObj->addError('ERR_NONE_ALLOW','허용되지 않은 접근입니다.');
+                $retObj->addError('ERR_NONE_ALLOW',sprintf('허용되지 않은 접근입니다. %s가 필요합니다.',$key));
                 return $retObj->output();
             }
         }
@@ -111,15 +120,18 @@ class Controller extends BaseController
                     break;
 
                 default:
-                    $user_token = AhUserToken::where('device_id',$deviceInfo['device_id'])->first();
+                    $token = $this->keygen->generate();
+                    $deviceInfo['token'] = $token;
                     $deviceInfo['user_id'] = $user->id;
-                    if($user_token == null) $user_token = new AhUserToken($deviceInfo);
-                    $user_token->save();
 
+                    $user_token = AhUserToken::firstOrNew(['device_id' => $deviceInfo['device_id']]);
+                    foreach($deviceInfo as $key => $val) $user_token->{$key} = $val;
+
+                    $user_token->save();
 
                     $retObj->setMessage("로그인에 성공하였습니다.");
                     $retObj->set('user',$user);
-                    $retObj->set('remember_token',$user_token->token);
+                    $retObj->set('remember_token',$token);
                     break;
             }
         }else{

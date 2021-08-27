@@ -1,7 +1,6 @@
 <?php
-namespace Amuz\Plugin\ApplicationHelper\Models;
+namespace Amuz\XePlugin\ApplicationHelper\Models;
 
-use Illuminate\Support\Arr;
 use Xpressengine\Database\Eloquent\DynamicModel;
 
 /**
@@ -19,6 +18,8 @@ class AhUserToken extends DynamicModel
     protected $table = 'ah_user_token';
 
     protected $primaryKey = 'token';
+
+    protected $guarded = [];
 
     public $incrementing = false;
 

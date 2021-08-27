@@ -1,5 +1,5 @@
 {
-  "name": "xpressengine-plugin/ApplicationHelper",
+  "name": "xpressengine-plugin/application-helper",
   "description": "This Package is Xpressengine Plugin - ApplicationHelper plugin.",
   "keywords": [
     "xpressengine",
@@ -26,7 +26,6 @@
     }
   },
   "require": {
-    "xpressengine/xpressengine": "~3.0.14"
   },
   "autoload": {
     "psr-4": {
