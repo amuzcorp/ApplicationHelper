@@ -1,5 +1,5 @@
 <?php
-namespace Amuz\Plugin\ApplicationHelper\Migrations;
+namespace Amuz\XePlugin\ApplicationHelper\Migrations;
 
 use Illuminate\Database\Schema\Blueprint;
 use DB;

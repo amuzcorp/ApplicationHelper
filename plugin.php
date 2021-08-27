@@ -1,7 +1,7 @@
 <?php
 namespace Amuz\XePlugin\ApplicationHelper;
 
-use Amuz\Plugin\ApplicationHelper\Migrations\Migration;
+use Amuz\XePlugin\ApplicationHelper\Migrations\Migration;
 use Route;
 use Xpressengine\Http\Request;
 use Xpressengine\Plugin\AbstractPlugin;
