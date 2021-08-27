@@ -46,19 +46,20 @@ class Controller extends BaseController
         $this->handler = app('xe.user');
         $this->emailBroker = app('xe.auth.email');
         $this->authController = new AuthController();
+    }
 
-        $this->middleware(
-            'auth',
-            [
-                'only' => ['getConfirm', 'getLogout', 'getAdminAuth', 'postAdminAuth', 'pendingAdmin', 'pendingEmail']
-            ]
-        );
-        $this->middleware(
-            'guest',
-            [
-                'except' => ['getConfirm', 'getLogout', 'getAdminAuth', 'postAdminAuth', 'pendingAdmin', 'pendingEmail']
-            ]
-        );
+    public function index()
+    {
+        $title = '애플리케이션 API 헬퍼';
+
+        // set browser title
+        XeFrontend::title($title);
+
+        // load css file
+        XeFrontend::css(Plugin::asset('assets/style.css'))->load();
+
+        // output
+        return view('ApplicationHelper::views.index', ['title' => $title]);
     }
 
     /**

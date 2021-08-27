@@ -1,6 +1,7 @@
 <?php
 namespace Amuz\XePlugin\ApplicationHelper;
 
+use Amuz\XePlugin\ApplicationHelper\Middleware\AmuzApiHelpers;
 use Amuz\XePlugin\ApplicationHelper\Migrations\Migration;
 use Route;
 use Xpressengine\Http\Request;
@@ -16,6 +17,8 @@ class Plugin extends AbstractPlugin
     public function boot()
     {
         // implement code
+        $router = app('router');
+        $router->prependMiddlewareToGroup('web', AmuzApiHelpers::class);
 
         $this->route();
     }
@@ -23,21 +26,21 @@ class Plugin extends AbstractPlugin
     protected function route()
     {
         // implement code
-
-        Route::fixed(
-            $this->getId(),
+        Route::fixed($this->getId(),
             function () {
-                Route::get('/csrf/_token', function(Request $request){
+                Route::get('/', [
+                    'as' => 'ah::index','uses' => 'Amuz\XePlugin\ApplicationHelper\Controller@index'
+                ]);
+
+                Route::get('/csrf/_token', ['as' => 'ah::get_token', 'uses' => function(Request $request){
                     return response()->json([
                         '_token' => csrf_token()
                     ]);
-                });
+                }]);
 
                 //use API Controller
-                Route::post('/auth/login',['uses' => 'Amuz\XePlugin\ApplicationHelper\Controller@postLogin']);
-            }
-        );
-
+                Route::post('/auth/login',['as' => 'ah::post_login','uses' => 'Amuz\XePlugin\ApplicationHelper\Controller@postLogin']);
+        });
     }
 
     /**
@@ -73,7 +76,7 @@ class Plugin extends AbstractPlugin
     {
         // implement code
         $migration = new Migration();
-        if(!$migration->tableExists())
+        if(!$migration->tableExists()) return false;
         return parent::checkInstalled();
     }
 
