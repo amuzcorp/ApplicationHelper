@@ -4,6 +4,7 @@ namespace Amuz\XePlugin\ApplicationHelper;
 use Amuz\XePlugin\ApplicationHelper\BaseObject;
 use Amuz\XePlugin\ApplicationHelper\Models\AhUserToken;
 use App\Http\Controllers\Auth\AuthController;
+use Faker\Provider\Base;
 use Illuminate\Foundation\Auth\AuthenticatesUsers;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -77,21 +78,36 @@ class Controller extends BaseController
      * @param  \Illuminate\Http\Request $request request
      * @return \Illuminate\Http\JsonResponse
      */
+    public function tokenLogin(Request $request)
+    {
+        $retObj = $this->checkDeviceConnect($request);
+        if($request->hasHeader('X-AMUZ-REMEMBER-TOKEN') && $request->hasHeader('X-AMUZ-DEVICE-UUID')){
+            $token_info = AhUserToken::where('device_id',$request->header('X-AMUZ-DEVICE-UUID'))->where('token',$request->header('X-AMUZ-REMEMBER-TOKEN'))->first();
+            if($token_info == null){
+                $retObj->addError('ERR_BROKEN_SESSION','잘못된 토큰이 전달되었습니다.');
+            }else{
+                $user = User::find($token_info->user_id);
+                $this->auth->login($user);
+
+                $retObj->setMessage("로그인에 성공하였습니다.");
+                $retObj->set('user',$user);
+                $retObj->set('remember_token',$token_info->token);
+            }
+        }else{
+            $retObj->addError('ERR_BROKEN_SESSION','잘못된 토큰이 전달되었습니다.');
+        }
+
+        return $retObj->output();
+    }
+    /**
+     * Handle a login request to the application.
+     *
+     * @param  \Illuminate\Http\Request $request request
+     * @return \Illuminate\Http\JsonResponse
+     */
     public function postLogin(Request $request)
     {
-        $retObj = new BaseObject();
-
-        $deviceInfo = [
-            'device_name' => $request->header('X-AMUZ-DEVICE-NAME'),
-            'device_version' => $request->header('X-AMUZ-DEVICE-VERSION'),
-            'device_id' => $request->header('X-AMUZ-DEVICE-UUID'),
-        ];
-        foreach($deviceInfo as $key => $val){
-            if($val == null){
-                $retObj->addError('ERR_NONE_ALLOW',sprintf('허용되지 않은 접근입니다. %s가 필요합니다.',$key));
-                return $retObj->output();
-            }
-        }
+        $retObj = $this->checkDeviceConnect($request);
 
         $this->authController->validate($request, [
             'email' => 'required',
@@ -121,6 +137,7 @@ class Controller extends BaseController
 
                 default:
                     $token = $this->keygen->generate();
+                    $deviceInfo = $retObj->get('deviceInfo');
                     $deviceInfo['token'] = $token;
                     $deviceInfo['user_id'] = $user->id;
 
@@ -138,6 +155,23 @@ class Controller extends BaseController
             $retObj->addError('ERR_AccountNotFoundOrDisabled',xe_trans('xe::msgAccountNotFoundOrDisabled'));
         }
         return $retObj->output();
+    }
+
+    protected function checkDeviceConnect(Request $request){
+        $retObj = new BaseObject();
+        $deviceInfo = [
+            'device_name' => $request->header('X-AMUZ-DEVICE-NAME'),
+            'device_version' => $request->header('X-AMUZ-DEVICE-VERSION'),
+            'device_id' => $request->header('X-AMUZ-DEVICE-UUID'),
+        ];
+        foreach($deviceInfo as $key => $val){
+            if($val == null){
+                $retObj->addError('ERR_NONE_ALLOW',sprintf('허용되지 않은 접근입니다. %s가 필요합니다.',$key));
+                return $retObj->output();
+            }
+        }
+        $retObj->set('deviceInfo',$deviceInfo);
+        return $retObj;
     }
 
 

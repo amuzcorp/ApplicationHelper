@@ -1,9 +1,10 @@
 <?php
 namespace Amuz\XePlugin\ApplicationHelper\Middleware;
 
-use Amuz\Plugin\ApplicationHelper\Models\AhUserToken;
+use Amuz\XePlugin\ApplicationHelper\Models\AhUserToken;
 use Amuz\XePlugin\ApplicationHelper\BaseObject;
 use Closure;
+use Faker\Provider\Base;
 use Xpressengine\Http\Request;
 use Xpressengine\User\Models\User;
 
@@ -17,6 +18,7 @@ class AmuzApiHelpers
             $auth = app('auth');
 
             $token = AhUserToken::where('token',$request->header('X-AMUZ-REMEMBER-TOKEN'))->where('device_id',$request->header('X-AMUZ-DEVICE-UUID'))->first();
+
             if($token != null){
                 $user = User::find($token->user_id);
                 $auth->login($user);

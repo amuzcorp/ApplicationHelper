@@ -40,6 +40,7 @@ class Plugin extends AbstractPlugin
 
                 //use API Controller
                 Route::post('/auth/login',['as' => 'ah::post_login','uses' => 'Amuz\XePlugin\ApplicationHelper\Controller@postLogin']);
+                Route::post('/auth/token',['as' => 'ah::token_login','uses' => 'Amuz\XePlugin\ApplicationHelper\Controller@tokenLogin']);
         });
     }
 
