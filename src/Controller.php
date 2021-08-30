@@ -69,19 +69,39 @@ class Controller extends BaseController
         $resources = \Route::getRoutes();
         $_routes = [];
         $_instance_routes = [];
+        $skeep_as = [
+            'proSEO::',
+            'editor',
+            'lang',
+            'draft',
+            'widgetbox',
+        ];
         foreach($resources->getRoutes() as $id => $route){
             $middleware = is_array(array_get($route->action,'middleware',[])) ? array_get($route->action,'middleware',[]) : [];
             if(in_array('settings', $middleware)) continue;
-            if(strstr(array_get($route->action,'as'),"proSEO::")) continue;
             if(array_get($route->action,'prefix') == "_debugbar") continue;
 
-            if(array_get($route->action,'module') == null){
-                $_routes[] = $route;
+            $is_skip = false;
+            foreach($skeep_as as $keep_keyword) if(strstr(array_get($route->action,'as'),$keep_keyword)) $is_skip = true;
+            if($is_skip) continue;
+
+            $route->as = array_get($route->action,'as');
+            $route->use_method = array_get($route->action,'uses',array_get($route->action,'controller'));
+            $route->use_method = is_callable($route->use_method) ? "Closer" : $route->use_method;
+
+            $key = str_replace(".","_",array_get($route->action,'as'));
+
+            $module = array_get($route->action,'module');
+            if($module == null){
+                $_routes[$key] = $route;
             }else{
-                if(!isset($_instance_routes[$route->action['module']])) $_instance_routes[$route->action['module']] = [];
-                $_instance_routes[$route->action['module']][] = $route;
+                if(!isset($_instance_routes[$module])) $_instance_routes[$module] = [];
+                $_instance_routes[$module][$key] = $route;
             }
         }
+
+        ksort($_routes);
+        ksort($_instance_routes);
 
         $method_colors = [
             'GET' => 'primary',
