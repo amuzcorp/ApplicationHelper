@@ -12,6 +12,8 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
 use XeFrontend;
 use XePresenter;
 use App\Http\Controllers\Controller as BaseController;
+use Xpressengine\Config\Repositories\CacheDecorator;
+use Xpressengine\Config\Repositories\DatabaseRepository;
 use Xpressengine\Keygen\Keygen;
 use Xpressengine\User\EmailBroker;
 use Xpressengine\User\Guard;
@@ -68,8 +70,25 @@ class Controller extends BaseController
         // load css file
         XeFrontend::css(Plugin::asset('assets/style.css'))->load();
 
+        $resources = \Route::getRoutes();
         // output
-        return view('ApplicationHelper::views.index', ['title' => $title]);
+        return view('ApplicationHelper::views.index', ['title' => $title, 'resources' => $resources]);
+    }
+
+    public function getLang($locale = 'ko'){
+        $lang_list = \DB::table('translation')->where('locale',$locale)->get();
+        $retObj = new BaseObject();
+        $retObj->set('translation',$lang_list);
+        return $retObj->output();
+    }
+
+    public function getConfig(){
+        $site_key = \XeSite::getCurrentSiteKey();
+        $config_list = \DB::table('config')->select('name','vars')->where('site_key',$site_key)->get();
+        $retObj = new BaseObject();
+        $retObj->set('site_key',$site_key);
+        $retObj->set('config_list',$config_list);
+        return $retObj->output();
     }
 
     /**
