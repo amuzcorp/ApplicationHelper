@@ -35,7 +35,6 @@
     <thead>
     <tr>
         <th>Route ID</th>
-        <th>Target Instance Module</th>
         <th>Allow Method</th>
         <th>Reource</th>
         <th>Route Name</th>
