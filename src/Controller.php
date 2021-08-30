@@ -22,7 +22,6 @@ use Xpressengine\User\UserHandler;
 
 class Controller extends BaseController
 {
-
     use AuthenticatesUsers;
 
     /**
@@ -49,14 +48,11 @@ class Controller extends BaseController
      */
     protected $emailBroker;
 
-    protected $authController;
-
     public function __construct(Keygen $keygen)
     {
         $this->auth = app('auth');
         $this->handler = app('xe.user');
         $this->emailBroker = app('xe.auth.email');
-        $this->authController = new AuthController();
         $this->keygen = $keygen;
     }
 
@@ -71,8 +67,31 @@ class Controller extends BaseController
         XeFrontend::css(Plugin::asset('assets/style.css'))->load();
 
         $resources = \Route::getRoutes();
+        $_routes = [];
+        $_instance_routes = [];
+        foreach($resources->getRoutes() as $id => $route){
+            $middleware = is_array(array_get($route->action,'middleware',[])) ? array_get($route->action,'middleware',[]) : [];
+            if(in_array('settings', $middleware)) continue;
+            if(strstr(array_get($route->action,'as'),"proSEO::")) continue;
+            if(array_get($route->action,'prefix') == "_debugbar") continue;
+
+            if(array_get($route->action,'module') == null){
+                $_routes[] = $route;
+            }else{
+                if(!isset($_instance_routes[$route->action['module']])) $_instance_routes[$route->action['module']] = [];
+                $_instance_routes[$route->action['module']][] = $route;
+            }
+        }
+
+        $method_colors = [
+            'GET' => 'primary',
+            'POST' => 'info',
+            'PUT' => 'success',
+            'DELETE' => 'danger',
+            'HEAD' => 'dark'
+        ];
         // output
-        return view('ApplicationHelper::views.index', ['title' => $title, 'resources' => $resources]);
+        return \XePresenter::make('ApplicationHelper::views.index', compact('title','_routes','_instance_routes','method_colors'));
     }
 
     public function getLang($locale = 'ko'){
@@ -127,11 +146,6 @@ class Controller extends BaseController
     public function postLogin(Request $request)
     {
         $retObj = $this->checkDeviceConnect($request);
-
-        $this->authController->validate($request, [
-            'email' => 'required',
-            'password' => 'required'
-        ]);
 
         $this->checkCaptcha();
 

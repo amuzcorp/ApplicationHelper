@@ -1,57 +1,68 @@
+<div class="container">
 <div class="title">{{ $title }}</div>
 <h4>API LIST</h4>
-<table>
-@foreach($resources->getRoutes() as $id => $action)
-    @php
-        $middleware = is_array(array_get($action->action,'middleware',[])) ? array_get($action->action,'middleware',[]) : [];
-    @endphp
-    @if(!in_array('settings', $middleware) && array_get($action->action,'module') == null && array_get($action->action,'prefix') != "_debugbar")
+<table class="xe-table">
+    <thead>
+    <tr>
+        <th>Route ID</th>
+        <th>Allow Method</th>
+        <th>Reource</th>
+        <th>Route Name</th>
+    </tr>
+    </thead>
+    @foreach($_routes as $id => $route)
     <tr>
         <td>
             {{$id}}
         </td>
         <td>
-        @foreach($action->methods as $method)
-            <span class="badge">{{ $method }}</span>
+        @foreach($route->methods as $method)
+            <span class="badge badge-{{$method_colors[$method]}}">{{ $method }}</span>
         @endforeach
         </td>
         <td>
-            {{ $action->uri }}
+            <span class="btn btn-sm btn-outline-primary">{{ $route->uri }}</span>
         </td>
         <td>
-            {{ array_get($action->action,'as') }}
+            {{ array_get($route->action,'as') }}
         </td>
     </tr>
-    @endif
-@endforeach
+    @endforeach
 </table>
 
 <h4>Route Instance LIST</h4>
-<table>
-@foreach($resources->getRoutes() as $id => $action)
-    @php
-        $middleware = is_array(array_get($action->action,'middleware',[])) ? array_get($action->action,'middleware',[]) : [];
-    @endphp
-    @if(!in_array('settings', $middleware) && array_get($action->action,'module') != null && array_get($action->action,'prefix') != "_debugbar")
+<table class="xe-table">
+    <thead>
     <tr>
-        <td>
-            {{$id}}
-        </td>
-        <td>
-            {{$action->action['module']}}
-        </td>
-        <td>
-        @foreach($action->methods as $method)
-            <span class="badge">{{ $method }}</span>
-        @endforeach
-        </td>
-        <td>
-            {{ $action->uri }}
-        </td>
-        <td>
-            {{ array_get($action->action,'as') }}
-        </td>
+        <th>Route ID</th>
+        <th>Target Instance Module</th>
+        <th>Allow Method</th>
+        <th>Reource</th>
+        <th>Route Name</th>
     </tr>
-    @endif
-@endforeach
+    </thead>
+    @foreach($_instance_routes as $module => $routes)
+        <tr>
+            <th colspan="4">{{$module}}</th>
+        </tr>
+        @foreach($routes as $route)
+        <tr>
+            <td>
+                {{$id}}
+            </td>
+            <td>
+                @foreach($route->methods as $method)
+                    <span class="badge badge-{{$method_colors[$method]}}">{{ $method }}</span>
+                @endforeach
+            </td>
+            <td>
+                <span class="btn btn-sm btn-outline-info">{{ $route->uri }}</span>
+            </td>
+            <td>
+                {{ array_get($route->action,'as') }}
+            </td>
+        </tr>
+        @endforeach
+    @endforeach
 </table>
+</div>
