@@ -1,0 +1,11 @@
+composer.lock
+yarn.lock
+composer.user.json
+/vendor/composer
+/vendor/autoload.php
+/vendor-new
+/vendor-old
+!/assets/vendor
+.env
+.idea/
+.DS_Store
