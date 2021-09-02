@@ -19,7 +19,7 @@
         @endforeach
         </td>
         <td>
-            <span class="btn btn-sm btn-outline-primary">{{ $route->uri }}</span>
+            <a href="/{{ $route->uri }}" target="_blank" class="btn btn-sm btn-outline-primary">{{ $route->uri }}</a>
         </td>
         <td>
             <strong>{{ $route->as }}</strong><br />

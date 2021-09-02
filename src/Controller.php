@@ -130,6 +130,17 @@ class Controller extends BaseController
         return $retObj->output();
     }
 
+
+    public function userRegister($group_id = null){
+        return view('ApplicationHelper::views.user.signup');
+    }
+
+    public function closer(Request $request){
+        $retObj = new BaseObject();
+        $retObj->set('request',$request->all());
+        return $retObj->output();
+    }
+
     /**
      * Handle a login request to the application.
      *

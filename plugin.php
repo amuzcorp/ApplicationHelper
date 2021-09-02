@@ -37,8 +37,12 @@ class Plugin extends AbstractPlugin
                         '_token' => csrf_token()
                     ]);
                 }]);
+                Route::get('/closer', ['as' => 'ah::closer', 'uses' => 'Amuz\XePlugin\ApplicationHelper\Controller@closer']);
+
                 Route::get('/config/list', ['as' => 'ah::config_list', 'uses' => 'Amuz\XePlugin\ApplicationHelper\Controller@getConfig']);
                 Route::get('/lang/{locale?}', ['as' => 'ah::lang_list', 'uses' => 'Amuz\XePlugin\ApplicationHelper\Controller@getLang']);
+
+                Route::get('/user/register/{group_id?}', ['as' => 'ah::user_register', 'uses' => 'Amuz\XePlugin\ApplicationHelper\Controller@userRegister']);
 
                 //use API Controller
                 Route::post('/auth/login',['as' => 'ah::post_login','uses' => 'Amuz\XePlugin\ApplicationHelper\Controller@postLogin']);
