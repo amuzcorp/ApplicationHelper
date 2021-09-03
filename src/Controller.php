@@ -72,7 +72,6 @@ class Controller extends BaseController
         $skeep_as = [
             'proSEO::',
             'editor',
-            'lang',
             'draft',
             'widgetbox',
         ];
@@ -127,6 +126,24 @@ class Controller extends BaseController
         $retObj = new BaseObject();
         $retObj->set('site_key',$site_key);
         $retObj->set('config_list',$config_list);
+        return $retObj->output();
+    }
+
+    public function getPermission(){
+        $site_key = \XeSite::getCurrentSiteKey();
+        $permission_list = \DB::table('permissions')->select('name','grants')->where('site_key',$site_key)->get();
+        $retObj = new BaseObject();
+        $retObj->set('site_key',$site_key);
+        $retObj->set('permission_list',$permission_list);
+        return $retObj->output();
+    }
+
+    public function getInstance(){
+        $site_key = \XeSite::getCurrentSiteKey();
+        $config_list = \DB::table('instance_route')->select('url','module','instance_id')->where('site_key',$site_key)->get();
+        $retObj = new BaseObject();
+        $retObj->set('site_key',$site_key);
+        $retObj->set('instance_list',$config_list);
         return $retObj->output();
     }
 
