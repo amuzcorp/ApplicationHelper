@@ -138,6 +138,25 @@ class Controller extends BaseController
         return $retObj->output();
     }
 
+    public function get_videos_vimeo(){
+//        ->select('id','directory_id','name','video_duration','thumbnail','thumbnail_overlay')
+        $vimeo_list = \DB::table('vimeo_video')->where('delete_status','N')->get();
+        $retObj = new BaseObject();
+        $retObj->set('vimeo_list',$vimeo_list);
+        return $retObj->output();
+    }
+
+    public function get_keychain(){
+        try{
+            $keychain = app('amuz.keychain');
+            $retObj = new BaseObject();
+            $retObj->set('key_list',$keychain->getUniqueKeys());
+            return $retObj->output();
+        }catch (\Exception $e){
+            throw new \Exception("키체인 플러그인이 설치되지 않았습니다.");
+        }
+    }
+
     public function getInstance(){
         $site_key = \XeSite::getCurrentSiteKey();
         $config_list = \DB::table('instance_route')->select('url','module','instance_id')->where('site_key',$site_key)->get();

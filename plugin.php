@@ -41,6 +41,9 @@ class Plugin extends AbstractPlugin
 
                 Route::get('/permission/list', ['as' => 'ah::config_list', 'uses' => 'Amuz\XePlugin\ApplicationHelper\Controller@getPermission']);
                 Route::get('/config/list', ['as' => 'ah::config_list', 'uses' => 'Amuz\XePlugin\ApplicationHelper\Controller@getConfig']);
+                Route::get('/keychain/list', ['as' => 'ah::keychain','uses' => 'Amuz\XePlugin\ApplicationHelper\Controller@get_keychain']); // with keychain plugin
+                Route::get('/video/vimeo/list', ['as' => 'ah::video_list','uses' => 'Amuz\XePlugin\ApplicationHelper\Controller@get_videos_vimeo']); // with vimeo video plugin
+
                 Route::get('/instance/list', ['as' => 'ah::instance_list', 'uses' => 'Amuz\XePlugin\ApplicationHelper\Controller@getInstance']);
 
                 Route::get('/lang/{locale?}', ['as' => 'ah::lang_list', 'uses' => 'Amuz\XePlugin\ApplicationHelper\Controller@getLang']);
