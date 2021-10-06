@@ -21,6 +21,7 @@ class Plugin extends AbstractPlugin
         $router->prependMiddlewareToGroup('web', AmuzApiHelpers::class);
 
         $this->route();
+        $this->settingsRoute();
     }
 
     protected function route()
@@ -53,6 +54,34 @@ class Plugin extends AbstractPlugin
                 //use API Controller
                 Route::post('/auth/login',['as' => 'ah::post_login','uses' => 'Amuz\XePlugin\ApplicationHelper\Controller@postLogin']);
                 Route::post('/auth/token',['as' => 'ah::token_login','uses' => 'Amuz\XePlugin\ApplicationHelper\Controller@tokenLogin']);
+        });
+    }
+
+    public function settingsRoute(){
+        \XeRegister::push('settings/menu', 'setting.application_helper', [
+            'title' => '애플리케이션 헬퍼',
+            'description' => '어플리케이션 설정입니다',
+            'display' => true,
+            'ordering' => 150
+        ]);
+        \XeRegister::push('settings/menu', 'setting.application_helper.navigator', [
+            'title' => '네비게이터',
+            'description' => '네비게이터 헬퍼',
+            'display' => true,
+            'ordering' => 50
+        ]);
+
+        Route::settings(static::getId(), function() {
+            Route::group([
+                'namespace' => 'Amuz\XePlugin\ApplicationHelper',
+                'as' => 'application_helper.settings.'
+            ], function () {
+                Route::get('/settings', [
+                    'as' => 'navigator',
+                    'uses' => 'SettingsController@navigator',
+                    'settings_menu' => 'setting.application_helper.navigator'
+                ]);
+            });
         });
     }
 
