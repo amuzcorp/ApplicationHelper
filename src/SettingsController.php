@@ -81,7 +81,7 @@ class SettingsController extends BaseController
             $ah_config = $xe_config->get('application_helper');
         }
 
-        $deliver_menus = $ah_config->get('navigator');
+        $deliver_menus = $ah_config->get('navigator',[]);
 
         // output
         return \XePresenter::make('ApplicationHelper::views.settings.navigator', compact('menus','deliver_menus'));
