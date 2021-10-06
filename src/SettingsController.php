@@ -7,6 +7,7 @@ use App\Facades\XePresenter;
 use App\Http\Controllers\Controller as BaseController;
 use Xpressengine\Http\Request;
 use Xpressengine\Menu\Models\Menu;
+use Xpressengine\Routing\InstanceRoute;
 
 class SettingsController extends BaseController
 {
@@ -75,10 +76,32 @@ class SettingsController extends BaseController
 
         $xe_config = app('xe.config');
         $ah_config = $xe_config->get('application_helper');
+        if($ah_config == null){
+            $xe_config->set('application_helper',[]);
+            $ah_config = $xe_config->get('application_helper');
+        }
+
         $deliver_menus = $ah_config->get('navigator');
 
         // output
         return \XePresenter::make('ApplicationHelper::views.settings.navigator', compact('menus','deliver_menus'));
+    }
+
+    public function instances()
+    {
+        $instances = InstanceRoute::where('site_key',\XeSite::getCurrentSiteKey())->get();
+
+        $xe_config = app('xe.config');
+        $ah_config = $xe_config->get('application_helper');
+        if($ah_config == null){
+            $xe_config->set('application_helper',[]);
+            $ah_config = $xe_config->get('application_helper');
+        }
+
+        $instance_configs = $ah_config->get('instances');
+
+        // output
+        return \XePresenter::make('ApplicationHelper::views.settings.instances', compact('instances','instance_configs'));
     }
 
     public function saveConfig(Request $request, $type){
@@ -93,7 +116,22 @@ class SettingsController extends BaseController
                     $deliverMenus = [];
                     foreach($keys as $key => $menuKeyId) $deliverMenus[$menuKeyId]  = $menus[$key];
 
-                    $xe_config->setVal('application_helper.navigator',$deliverMenus);
+                    $xe_config->setVal('application_helper.'.$type,$deliverMenus);
+                break;
+
+            case "instances" :
+                    $skins = $request->get('skin');
+                    $states = $request->get('state');
+
+                    $options = [];
+                    foreach($skins as $instance_id => $skin){
+                        $options[$instance_id] = [
+                            'skin' => $skin,
+                            'state' => $states[$instance_id],
+                        ];
+                    }
+
+                    $xe_config->setVal('application_helper.'.$type,$options);
                 break;
         }
 

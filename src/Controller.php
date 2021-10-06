@@ -89,7 +89,16 @@ class Controller extends BaseController
         $menu_id = array_get($deliver_menus,$menu_key);
         if($menu_id == null) return;
 
+        $instance_configs = $ah_config->get('instances');
+
         $menu_list = \DB::table('menu_item')->where('menu_id',$menu_id)->where('site_key',$site_key)->get();
+        foreach($menu_list as $menu){
+            $skin = array_get(array_get($instance_configs,$menu->id,[]),'skin');
+            $state = array_get(array_get($instance_configs,$menu->id,[]),'state');
+            $menu->skin = $skin;
+            $menu->state = $state;
+        }
+
         $retObj = new BaseObject();
         $retObj->set('site_key',$site_key);
         $retObj->set('menu_list',$menu_list);

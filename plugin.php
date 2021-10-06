@@ -78,6 +78,12 @@ class Plugin extends AbstractPlugin
             'display' => true,
             'ordering' => 50
         ]);
+        \XeRegister::push('settings/menu', 'setting.application_helper.instances', [
+            'title' => '인스턴스',
+            'description' => '인스턴스 헬퍼',
+            'display' => true,
+            'ordering' => 80
+        ]);
 
         Route::settings(static::getId(), function() {
             Route::group([
@@ -93,6 +99,11 @@ class Plugin extends AbstractPlugin
                     'as' => 'navigator',
                     'uses' => 'SettingsController@navigator',
                     'settings_menu' => 'setting.application_helper.navigator'
+                ]);
+                Route::get('/instances', [
+                    'as' => 'instances',
+                    'uses' => 'SettingsController@instances',
+                    'settings_menu' => 'setting.application_helper.instances'
                 ]);
 
                 Route::post('/save/{type}', [
