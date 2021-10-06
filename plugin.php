@@ -47,6 +47,8 @@ class Plugin extends AbstractPlugin
 
                 Route::get('/instance/list', ['as' => 'ah::instance_list', 'uses' => 'Amuz\XePlugin\ApplicationHelper\Controller@getInstance']);
 
+                Route::get('/navigator/{menu_key}', ['as' => 'ah::navigator_list', 'uses' => 'Amuz\XePlugin\ApplicationHelper\Controller@getNavigator']);
+
                 Route::get('/lang/{locale?}', ['as' => 'ah::lang_list', 'uses' => 'Amuz\XePlugin\ApplicationHelper\Controller@getLang']);
 
                 Route::get('/user/register/{group_id?}', ['as' => 'ah::user_register', 'uses' => 'Amuz\XePlugin\ApplicationHelper\Controller@userRegister']);
@@ -64,6 +66,12 @@ class Plugin extends AbstractPlugin
             'display' => true,
             'ordering' => 150
         ]);
+        \XeRegister::push('settings/menu', 'setting.application_helper.index', [
+            'title' => 'API Routes',
+            'description' => 'API 목록',
+            'display' => true,
+            'ordering' => 20
+        ]);
         \XeRegister::push('settings/menu', 'setting.application_helper.navigator', [
             'title' => '네비게이터',
             'description' => '네비게이터 헬퍼',
@@ -76,10 +84,20 @@ class Plugin extends AbstractPlugin
                 'namespace' => 'Amuz\XePlugin\ApplicationHelper',
                 'as' => 'application_helper.settings.'
             ], function () {
-                Route::get('/settings', [
+                Route::get('/index', [
+                    'as' => 'index',
+                    'uses' => 'SettingsController@index',
+                    'settings_menu' => 'setting.application_helper.index'
+                ]);
+                Route::get('/navigator', [
                     'as' => 'navigator',
                     'uses' => 'SettingsController@navigator',
                     'settings_menu' => 'setting.application_helper.navigator'
+                ]);
+
+                Route::post('/save/{type}', [
+                    'as' => 'configSave',
+                    'uses' => 'SettingsController@saveConfig'
                 ]);
             });
         });

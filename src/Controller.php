@@ -62,55 +62,7 @@ class Controller extends BaseController
 
         // set browser title
         XeFrontend::title($title);
-
-        // load css file
-        XeFrontend::css(Plugin::asset('assets/style.css'))->load();
-
-        $resources = \Route::getRoutes();
-        $_routes = [];
-        $_instance_routes = [];
-        $skeep_as = [
-            'proSEO::',
-            'editor',
-            'draft',
-            'widgetbox',
-        ];
-        foreach($resources->getRoutes() as $id => $route){
-            $middleware = is_array(array_get($route->action,'middleware',[])) ? array_get($route->action,'middleware',[]) : [];
-            if(in_array('settings', $middleware)) continue;
-            if(array_get($route->action,'prefix') == "_debugbar") continue;
-
-            $is_skip = false;
-            foreach($skeep_as as $keep_keyword) if(strstr(array_get($route->action,'as'),$keep_keyword)) $is_skip = true;
-            if($is_skip) continue;
-
-            $route->as = array_get($route->action,'as');
-            $route->use_method = array_get($route->action,'uses',array_get($route->action,'controller'));
-            $route->use_method = is_callable($route->use_method) ? "Closer" : $route->use_method;
-
-            $key = str_replace(".","_",array_get($route->action,'as'));
-
-            $module = array_get($route->action,'module');
-            if($module == null){
-                $_routes[$key] = $route;
-            }else{
-                if(!isset($_instance_routes[$module])) $_instance_routes[$module] = [];
-                $_instance_routes[$module][$key] = $route;
-            }
-        }
-
-        ksort($_routes);
-        ksort($_instance_routes);
-
-        $method_colors = [
-            'GET' => 'primary',
-            'POST' => 'info',
-            'PUT' => 'success',
-            'DELETE' => 'danger',
-            'HEAD' => 'dark'
-        ];
-        // output
-        return \XePresenter::make('ApplicationHelper::views.index', compact('title','_routes','_instance_routes','method_colors'));
+        return \XePresenter::make('ApplicationHelper::views.index', []);
     }
 
     public function getLang($locale = 'ko'){
@@ -126,6 +78,21 @@ class Controller extends BaseController
         $retObj = new BaseObject();
         $retObj->set('site_key',$site_key);
         $retObj->set('config_list',$config_list);
+        return $retObj->output();
+    }
+
+    public function getNavigator($menu_key){
+        $site_key = \XeSite::getCurrentSiteKey();
+        $xe_config = app('xe.config');
+        $ah_config = $xe_config->get('application_helper');
+        $deliver_menus = $ah_config->get('navigator');
+        $menu_id = array_get($deliver_menus,$menu_key);
+        if($menu_id == null) return;
+
+        $menu_list = \DB::table('menu_item')->where('menu_id',$menu_id)->where('site_key',$site_key)->get();
+        $retObj = new BaseObject();
+        $retObj->set('site_key',$site_key);
+        $retObj->set('menu_list',$menu_list);
         return $retObj->output();
     }
 
