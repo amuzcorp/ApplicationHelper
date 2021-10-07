@@ -5,6 +5,7 @@ use Amuz\XePlugin\ApplicationHelper\Plugin as Plugin;
 use App\Facades\XeFrontend;
 use App\Facades\XePresenter;
 use App\Http\Controllers\Controller as BaseController;
+use App\Http\Sections\SkinSection;
 use Xpressengine\Http\Request;
 use Xpressengine\Menu\Models\Menu;
 use Xpressengine\Routing\InstanceRoute;
@@ -102,6 +103,37 @@ class SettingsController extends BaseController
 
         // output
         return \XePresenter::make('ApplicationHelper::views.settings.instances', compact('instances','instance_configs'));
+    }
+
+    /**
+     * edit Skin setting
+     *
+     * @return \Xpressengine\Presenter\Presentable
+     */
+    public function inAppBrowserSkins()
+    {
+        $skinSections = [
+            "auth" => [
+                    'title' => xe_trans('xe::userSingUpLoginSkin'),
+                    'skin_id' => 'ahib/user/auth',
+                    'routes' => [
+                        [
+                            'title' => '회원가입',
+                            'description' => '가입 후 토큰을 반환하고 Closer로 이동합니다.',
+                            'url' => route('ahib::user_register')
+                        ]
+                    ]
+                ],
+        ];
+        foreach($skinSections as $section_id => $section){
+            $skinSection = new SkinSection($section['skin_id']);
+            $skinSections[$section_id]['skinSection'] = $skinSection->render();
+        }
+
+        return XePresenter::make(
+            'ApplicationHelper::views.settings.ibSkin',
+            compact('skinSections')
+        );
     }
 
     public function saveConfig(Request $request, $type){

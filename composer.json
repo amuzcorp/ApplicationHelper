@@ -1,35 +1,40 @@
 {
-  "name": "xpressengine-plugin/application-helper",
-  "description": "This Package is Xpressengine Plugin - ApplicationHelper plugin.",
-  "keywords": [
-    "xpressengine",
-    "plugin"
-  ],
-  "license": "LGPL-3.0-or-later",
-  "version": "1.0.0",
-  "type": "xpressengine-plugin",
-  "support": {
-    "email": "input@your.email"
-  },
-  "authors": [
-    {
-      "name": "input your name",
-      "email": "input@your.email",
-      "homepage": "http://input.your.site",
-      "role": "Developer"
+    "name": "xpressengine-plugin/application-helper",
+    "description": "이 패키지는 XE3와 외부 애플리케이션의 연동을 도와줍니다.",
+    "keywords": [
+        "xpressengine",
+        "plugin"
+    ],
+    "license": "LGPL-3.0-or-later",
+    "version": "1.0.0",
+    "type": "xpressengine-plugin",
+    "support": {
+        "email": "develop@amuz.co.kr"
+    },
+    "authors": [
+        {
+            "name": "xiso",
+            "email": "xiso@amuz.co.kr",
+            "homepage": "https://amuz.co.kr",
+            "role": "Developer"
+        }
+    ],
+    "extra": {
+        "xpressengine": {
+            "title": "애플리케이션 헬퍼",
+            "component": {
+                "ahib/user/auth/skin/ApplicationHelper@defaultuser": {
+                    "name": "회원스킨",
+                    "description": "애플리케이션 헬퍼에 사용되는 인앱브라우저 전용 회원스킨입니다.",
+                    "class": "Amuz\\XePlugin\\ApplicationHelper\\Skins\\DefaultUser\\DefaultUser"
+                }
+            }
+        }
+    },
+    "require": {},
+    "autoload": {
+        "psr-4": {
+            "Amuz\\XePlugin\\ApplicationHelper\\": "src/"
+        }
     }
-  ],
-  "extra": {
-    "xpressengine": {
-      "title": "ApplicationHelper plugin",
-      "component": {}
-    }
-  },
-  "require": {
-  },
-  "autoload": {
-    "psr-4": {
-      "Amuz\\XePlugin\\ApplicationHelper\\": "src/"
-    }
-  }
 }
