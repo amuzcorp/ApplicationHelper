@@ -48,6 +48,7 @@ class Plugin extends AbstractPlugin
                 Route::get('/instance/list', ['as' => 'ah::instance_list', 'uses' => 'Amuz\XePlugin\ApplicationHelper\Controller@getInstance']);
 
                 Route::get('/navigator/{menu_key}', ['as' => 'ah::navigator_list', 'uses' => 'Amuz\XePlugin\ApplicationHelper\Controller@getNavigator']);
+                Route::get('/taxonomies/{taxonomy_key}', ['as' => 'ah::taxonomy_list', 'uses' => 'Amuz\XePlugin\ApplicationHelper\Controller@getTaxonomies']);
 
                 Route::get('/lang/{locale?}', ['as' => 'ah::lang_list', 'uses' => 'Amuz\XePlugin\ApplicationHelper\Controller@getLang']);
 

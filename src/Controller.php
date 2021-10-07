@@ -105,6 +105,22 @@ class Controller extends BaseController
         return $retObj->output();
     }
 
+    //for dynamic factory
+    public function getTaxonomies($taxonomy_key) {
+        $taxonomies = app('overcode.df.taxonomyHandler')->getTaxonomies($taxonomy_key);
+        if($taxonomies == null) return;
+
+        foreach($taxonomies as $taxonomy) {
+            $taxonomy->name = xe_trans($taxonomy->name);
+            $items = app('overcode.df.taxonomyHandler')->getCategoryItemsTree($taxonomy->id)->toArray();
+            sort($items);
+
+            $taxonomy->item = $items;
+        }
+
+        return XePresenter::makeApi(['error' => 0, 'message' => 'Complete', 'data' => $taxonomies]);
+    }
+
     public function getPermission(){
         $site_key = \XeSite::getCurrentSiteKey();
         $permission_list = \DB::table('permissions')->select('name','grants')->where('site_key',$site_key)->get();
