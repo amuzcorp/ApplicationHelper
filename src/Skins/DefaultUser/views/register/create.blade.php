@@ -1,6 +1,6 @@
 {{ XeFrontend::css('assets/core/xe-ui/css/xe-ui-without-base.css')->load() }}
 {{ XeFrontend::js('assets/core/user/user_register.js')->load() }}
-
+@section('content')
 <!-- 회원가입 폼  -->
 <!-- [D] 회원가입 폼 영역은 가로 길이 때문에 class="user--signup" 추가 -->
 <div class="user user--signup">
@@ -25,3 +25,4 @@
     </form>
 </div>
 <!-- //로그인 폼  -->
+@endsection

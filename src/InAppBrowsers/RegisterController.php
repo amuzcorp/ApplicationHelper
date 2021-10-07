@@ -28,6 +28,10 @@ class RegisterController extends XeRegisterController
      */
     public function __construct()
     {
+        //force logout
+        $this->auth = app('auth');
+        $this->auth->logout();
+
         parent::__construct();
 
         XeTheme::selectBlankTheme();
