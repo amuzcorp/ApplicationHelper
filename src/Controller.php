@@ -80,6 +80,12 @@ class Controller extends BaseController
         $retObj->set('config_list',$config_list);
         return $retObj->output();
     }
+//
+//    public function getRegister($group_id = null){
+////        dd($this->auth->user());
+//        $this->auth->logout();
+//        return redirect()->to(route('ahib::user_register',['group_id'=>$group_id]));
+//    }
 
     public function getNavigator($menu_key){
         $site_key = \XeSite::getCurrentSiteKey();
