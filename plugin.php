@@ -118,7 +118,7 @@ class Plugin extends AbstractPlugin
                     'settings_menu' => 'setting.application_helper.instances'
                 ]);
                 Route::get('/inAppBrowserSkins', [
-                    'as' => 'instances',
+                    'as' => 'inAppBrowsers',
                     'uses' => 'SettingsController@inAppBrowserSkins',
                     'settings_menu' => 'setting.application_helper.ibSkins'
                 ]);

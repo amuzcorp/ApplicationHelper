@@ -97,7 +97,7 @@ class Controller extends BaseController
 
         $instance_configs = $ah_config->get('instances');
 
-        $menu_list = \DB::table('menu_item')->where('menu_id',$menu_id)->where('site_key',$site_key)->get();
+        $menu_list = \DB::table('menu_item')->where('menu_id',$menu_id)->where('site_key',$site_key)->orderBy('ordering','asc')->get();
         foreach($menu_list as $menu){
             $skin = array_get(array_get($instance_configs,$menu->id,[]),'skin');
             $state = array_get(array_get($instance_configs,$menu->id,[]),'state');
