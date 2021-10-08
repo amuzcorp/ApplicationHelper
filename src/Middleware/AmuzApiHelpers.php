@@ -22,15 +22,15 @@ class AmuzApiHelpers
             if($token != null){
                 $user = User::find($token->user_id);
                 $auth->login($user);
-            }else{
-                $auth->logout();
-//                $request->session()->invalidate();
-//                $request->session()->regenerateToken();
-
-                $retObj = new BaseObject();
-                $retObj->set('remember_token',$request->header('X-AMUZ-REMEMBER-TOKEN'));
-                $retObj->addError('ERR_BROKEN_SESSION','세션이 만료되었거나 로그아웃 되었습니다.');
-                return $retObj->output();
+//            }else{
+//                $auth->logout();
+////                $request->session()->invalidate();
+////                $request->session()->regenerateToken();
+//
+//                $retObj = new BaseObject();
+//                $retObj->set('remember_token',$request->header('X-AMUZ-REMEMBER-TOKEN'));
+//                $retObj->addError('ERR_BROKEN_SESSION','세션이 만료되었거나 로그아웃 되었습니다.');
+//                return $retObj->output();
             }
         }
         return $next($request);
