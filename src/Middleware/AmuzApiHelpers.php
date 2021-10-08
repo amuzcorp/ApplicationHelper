@@ -24,8 +24,8 @@ class AmuzApiHelpers
                 $auth->login($user);
             }else{
                 $auth->logout();
-                $request->session()->invalidate();
-                $request->session()->regenerateToken();
+//                $request->session()->invalidate();
+//                $request->session()->regenerateToken();
 
                 $retObj = new BaseObject();
                 $retObj->addError('ERR_BROKEN_SESSION','세션이 만료되었거나 로그아웃 되었습니다.');
