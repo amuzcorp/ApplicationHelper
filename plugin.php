@@ -22,6 +22,8 @@ class Plugin extends AbstractPlugin
 
         $this->route();
         $this->settingsRoute();
+
+        $this->interceptDynamicField();
     }
 
     protected function route()
@@ -128,6 +130,56 @@ class Plugin extends AbstractPlugin
                     'uses' => 'SettingsController@saveConfig'
                 ]);
             });
+        });
+    }
+
+    public function interceptDynamicField() {
+        intercept('Xpressengine\Plugins\Board\Services\BoardService@getItem','BoardModuleShowsIntercept',function($getItem,$id,$user,$config,$isManager){
+            $item = $getItem($id,$user,$config, $isManager);
+
+            $xeMedia = app('xe.media');
+            $medias = [];
+            foreach($item->files as $file) {
+                if ($xeMedia->is($file)) {
+                    $mediaFile = app('xe.media')->make($file);
+                    $mediaFile->url = $mediaFile->url();
+                    $medias[] = $mediaFile;
+                }
+            }
+            $item->medias = $medias;
+
+            if($item->tags) $item->tags_item = $item->tags->toArray();
+            else $item->tags_item = [];
+
+            if(!app('xe.board.handler')->hasFavorite($item->id, \Auth::user()->getId())) $item->has_favorite = 0;
+            else $item->has_favorite = 1;
+
+            return $item;
+        });
+
+        intercept('Xpressengine\Plugins\Board\Services\BoardService@getItems','BoardModuleListsIntercept',function($method,$query,$request){
+            $query = $method($query,$request);
+            $xeMedia = app('xe.media');
+
+            foreach($query as $item) {
+
+                $medias = [];
+                foreach($item->files as $file) {
+                    if ($xeMedia->is($file)) {
+                        $mediaFile = app('xe.media')->make($file);
+                        $mediaFile->url = $mediaFile->url();
+                        $medias[] = $mediaFile;
+                    }
+                }
+                $item->medias = $medias;
+
+                if($item->tags) $item->tags_item = $item->tags->toArray();
+                else $item->tags_item = [];
+
+                if(!app('xe.board.handler')->hasFavorite($item->id, \Auth::user()->getId())) $item->has_favorite = 0;
+                else $item->has_favorite = 1;
+            }
+            return $query;
         });
     }
 
