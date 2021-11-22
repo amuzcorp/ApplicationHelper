@@ -152,12 +152,12 @@ class Plugin extends AbstractPlugin
             else $item->tags_item = [];
 
             //좋아요 상태 체크
-            if(!app('xe.board.handler')->hasVote($item, \Auth::user(), 'assent')) $item->has_assent = 0;
-            $item->has_assent = 1;
+            $item->has_assent = 0;
+            if(app('xe.board.handler')->hasVote($item, \Auth::user(), 'assent') == true) $item->has_assent = 1;
 
             //찜하기 상태 체크
-            if(!app('xe.board.handler')->hasFavorite($item->id, \Auth::user()->getId())) $item->has_favorite = 0;
-            else $item->has_favorite = 1;
+            $item->has_favorite = 0;
+            if(app('xe.board.handler')->hasFavorite($item->id, \Auth::user()->getId()) == true) $item->has_favorite = 1;
 
             return $item;
         });
@@ -182,12 +182,12 @@ class Plugin extends AbstractPlugin
                 else $item->tags_item = [];
 
                 //좋아요 상태 체크
-                if(!app('xe.board.handler')->hasVote($item, \Auth::user(), 'assent')) $item->has_assent = 0;
-                $item->has_assent = 1;
+                $item->has_assent = 0;
+                if(app('xe.board.handler')->hasVote($item, \Auth::user(), 'assent') == true) $item->has_assent = 1;
 
                 //찜하기 상태 체크
-                if(!app('xe.board.handler')->hasFavorite($item->id, \Auth::user()->getId())) $item->has_favorite = 0;
-                else $item->has_favorite = 1;
+                $item->has_favorite = 0;
+                if(app('xe.board.handler')->hasFavorite($item->id, \Auth::user()->getId()) == true) $item->has_favorite = 1;
             }
             return $query;
         });
