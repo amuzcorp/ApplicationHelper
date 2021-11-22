@@ -151,6 +151,17 @@ class Plugin extends AbstractPlugin
             if($item->tags) $item->tags_item = $item->tags->toArray();
             else $item->tags_item = [];
 
+            //댓글 instance_id
+            $comment_map = \DB::table('config')->where('name', 'comment_map')->first();
+
+            if(!$comment_map) $comment_map = [];
+            else $comment_map = json_dec($comment_map->vars, true);
+
+            $item->comment_instance_id = '';
+            if(isset($comment_map[$item->instance_id])) {
+                $item->comment_instance_id = $comment_map[$item->instance_id];
+            }
+
             //좋아요 상태 체크
             $item->has_assent = 0;
             if(app('xe.board.handler')->hasVote($item, \Auth::user(), 'assent') == true) $item->has_assent = 1;
@@ -166,6 +177,11 @@ class Plugin extends AbstractPlugin
             $query = $method($query,$request);
             $xeMedia = app('xe.media');
 
+            $comment_map = \DB::table('config')->where('name', 'comment_map')->first();
+
+            if(!$comment_map) $comment_map = [];
+            else $comment_map = json_dec($comment_map->vars, true);
+
             foreach($query as $item) {
 
                 $medias = [];
@@ -177,6 +193,12 @@ class Plugin extends AbstractPlugin
                     }
                 }
                 $item->medias = $medias;
+
+                //댓글 instance_id
+                $item->comment_instance_id = '';
+                if(isset($comment_map[$item->instance_id])) {
+                    $item->comment_instance_id = $comment_map[$item->instance_id];
+                }
 
                 if($item->tags) $item->tags_item = $item->tags->toArray();
                 else $item->tags_item = [];
