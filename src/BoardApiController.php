@@ -63,6 +63,7 @@ class BoardApiController extends BaseController
         $comments = $query->with('target.commentable')->paginate($take, ['*'], 'page', $page);
         foreach ($comments as $comment) {
             $handler->bindUserVote($comment);
+            $comment->writer_profile = app('xe.user')->users()->where('id', $comment->user_id)->first()->getProfileImage();
         }
 
         return XePresenter::makeApi([
