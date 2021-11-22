@@ -151,9 +151,11 @@ class Plugin extends AbstractPlugin
             if($item->tags) $item->tags_item = $item->tags->toArray();
             else $item->tags_item = [];
 
+            //좋아요 상태 체크
             if(!app('xe.board.handler')->hasVote($item, \Auth::user(), 'assent')) $item->has_assent = 0;
             $item->has_assent = 1;
 
+            //찜하기 상태 체크
             if(!app('xe.board.handler')->hasFavorite($item->id, \Auth::user()->getId())) $item->has_favorite = 0;
             else $item->has_favorite = 1;
 
@@ -179,9 +181,11 @@ class Plugin extends AbstractPlugin
                 if($item->tags) $item->tags_item = $item->tags->toArray();
                 else $item->tags_item = [];
 
+                //좋아요 상태 체크
                 if(!app('xe.board.handler')->hasVote($item, \Auth::user(), 'assent')) $item->has_assent = 0;
                 $item->has_assent = 1;
 
+                //찜하기 상태 체크
                 if(!app('xe.board.handler')->hasFavorite($item->id, \Auth::user()->getId())) $item->has_favorite = 0;
                 else $item->has_favorite = 1;
             }
