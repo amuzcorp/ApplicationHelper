@@ -141,7 +141,7 @@ class Plugin extends AbstractPlugin
             $medias = [];
             foreach($item->files as $file) {
                 if ($xeMedia->is($file)) {
-                    $mediaFile = app('xe.media')->make($file);
+                    $mediaFile = $xeMedia->make($file);
                     $mediaFile->url = $mediaFile->url();
                     $medias[] = $mediaFile;
                 }
@@ -169,7 +169,7 @@ class Plugin extends AbstractPlugin
                 $medias = [];
                 foreach($item->files as $file) {
                     if ($xeMedia->is($file)) {
-                        $mediaFile = app('xe.media')->make($file);
+                        $mediaFile = $xeMedia->make($file);
                         $mediaFile->url = $mediaFile->url();
                         $medias[] = $mediaFile;
                     }
