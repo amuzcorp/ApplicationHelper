@@ -10,10 +10,20 @@ use Xpressengine\Plugins\Comment\Models\Comment;
 class BoardApiController extends BaseController
 {
 
-    public function getItem(Request $request, $targetType, $targetId, $instanceId) {
+    public function getItem(Request $request) {
+
+        $this->validate($request, [
+            'targetType' => 'required',
+            'targetId' => 'required',
+            'instanceId' => 'required'
+        ]);
 
         $offsetHead = !empty($request->get('offsetHead')) ? $request->get('offsetHead') : null;
         $offsetReply = !empty($request->get('offsetReply')) ? $request->get('offsetReply') : null;
+
+        $targetType = $request->get('targetType');
+        $targetId = $request->get('targetId');
+        $instanceId = $request->get('instanceId');
 
         $plugin = app('xe.plugin.comment');
         $handler = $plugin->getHandler();

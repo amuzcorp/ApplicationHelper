@@ -66,7 +66,7 @@ class Plugin extends AbstractPlugin
                 Route::post('/ib/user/register/{group_id?}', ['as' => 'ahib::user_register.store', 'uses' => 'Amuz\XePlugin\ApplicationHelper\InAppBrowsers\RegisterController@postRegister']); // for store
 
                 //get Board Comment Data
-                Route::get('/comment/getItem/{targetType}/{targetId}/{instanceId}', ['as' => 'comment::certify', 'uses' => 'Amuz\XePlugin\ApplicationHelper\BoardApiController@getItem']);
+                Route::get('/comment/getItem', ['as' => 'comment::certify', 'uses' => 'Amuz\XePlugin\ApplicationHelper\BoardApiController@getItem']);
         });
     }
 
