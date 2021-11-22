@@ -64,6 +64,9 @@ class Plugin extends AbstractPlugin
 //                Route::get('/ib/user/register/{group_id?}', ['as' => 'ahib::user_register_before', 'uses' => 'Amuz\XePlugin\ApplicationHelper\Controller@getRegister']);
 //                Route::get('/ib/user/regAfter/{group_id?}', ['as' => 'ahib::user_register', 'uses' => 'Amuz\XePlugin\ApplicationHelper\InAppBrowsers\RegisterController@getRegister']);
                 Route::post('/ib/user/register/{group_id?}', ['as' => 'ahib::user_register.store', 'uses' => 'Amuz\XePlugin\ApplicationHelper\InAppBrowsers\RegisterController@postRegister']); // for store
+
+                //get Board Comment Data
+                Route::get('/comment/getItem/{targetType}/{targetId}/{instanceId}', ['as' => 'comment::certify', 'uses' => 'Amuz\XePlugin\ApplicationHelper\BoardApiController@getItem']);
         });
     }
 
