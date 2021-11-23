@@ -45,7 +45,7 @@ class BoardApiController extends BaseController
         // 댓글 총 수
         $totalCount = $query->count();
 
-        $direction = $config->get('reverse') === true ? 'asc' : 'desc';
+        $direction = $config->get('reverse') === true ? 'desc' : 'asc';
 
         if ($offsetHead !== null) {
             $query->where(function ($query) use ($offsetHead, $offsetReply, $direction) {
