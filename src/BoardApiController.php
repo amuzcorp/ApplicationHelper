@@ -49,7 +49,7 @@ class BoardApiController extends BaseController
             'totalCount' => $totalCount,
             'hasMore' => $comments->hasMorePages(),
             'items' => $comments,
-            'page' => $page
+            'page' => (int) $page
         ]);
 
     }
