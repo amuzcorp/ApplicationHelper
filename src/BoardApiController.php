@@ -2,6 +2,7 @@
 namespace Amuz\XePlugin\ApplicationHelper;
 
 use Illuminate\Http\Request;
+use Illuminate\Pagination\Paginator;
 use XeFrontend;
 use XePresenter;
 use App\Http\Controllers\Controller as BaseController;
@@ -32,7 +33,6 @@ class BoardApiController extends BaseController
 
         \Event::fire('xe.plugin.comment.retrieved', [$request]);
 
-        $page = $request->get('page') ?: 1;
         $take = $request->get('perPage', $config['perPage']);
 
         $model = $handler->createModel($instanceId);
@@ -57,17 +57,19 @@ class BoardApiController extends BaseController
                 $query->orWhere('head', '<', $offsetHead);
             });
         }
-        $query->orderBy('head', 'desc')->orderBy('reply', $direction)->take($take + 1);
+        $query->orderBy('head', 'desc')->orderBy('reply', $direction)->orderBy('created_at', 'DESC')->take($take + 1);
         // 대상글의 작성자까지 eager load 로 조회하여야 되나
         // 대상글 작성자를 조회하는 relation 명을 지정할 수 없음.
-        $comments = $query->with('target.commentable')->paginate($take, ['*'], 'page', $page);
+        $comments = $query->with('target.commentable')->get();
         foreach ($comments as $comment) {
             $handler->bindUserVote($comment);
             $comment->writer_profile = app('xe.user')->users()->where('id', $comment->user_id)->first()->getProfileImage();
         }
+        $comments = new Paginator($comments, $take);
 
         return XePresenter::makeApi([
             'totalCount' => $totalCount,
+            'hasMore' => $comments->hasMorePages(),
             'items' => $comments,
         ]);
 
