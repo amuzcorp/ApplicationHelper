@@ -65,6 +65,14 @@ class BoardApiController extends BaseController
         //TODO 원댓글 - 대댓글 순으로 data 정렬 [0 : 댓글, 1 : 대댓글]
         $comments = $query->with('target.commentable')->get();
 
+        foreach ($comments as $comment) {
+            $handler->bindUserVote($comment);
+            $comment->writer_profile = app('xe.user')->users()->where('id', $comment->user_id)->first()->getProfileImage();
+        }
+        $comments = new Paginator($comments, $take);
+        $hasMorePages = $comments->hasMorePages();
+        $comments = $comments->reverse()->values();
+
         $head = '';
         $reply = '';
 
@@ -73,16 +81,9 @@ class BoardApiController extends BaseController
             $reply = $comments[0]->reply;
         }
 
-        $comments = $comments->reverse()->values();
-        foreach ($comments as $comment) {
-            $handler->bindUserVote($comment);
-            $comment->writer_profile = app('xe.user')->users()->where('id', $comment->user_id)->first()->getProfileImage();
-        }
-        $comments = new Paginator($comments, $take);
-
         return XePresenter::makeApi([
             'totalCount' => $totalCount,
-            'hasMore' => $comments->hasMorePages(),
+            'hasMore' => $hasMorePages,
             'items' => $comments,
             'head' => $head,
             'reply' => $reply
