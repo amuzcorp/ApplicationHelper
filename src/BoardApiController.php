@@ -57,10 +57,23 @@ class BoardApiController extends BaseController
                 $query->orWhere('head', '<', $offsetHead);
             });
         }
-        $query->orderBy('head', 'desc')->orderBy('reply', $direction)->take($take + 1);
+        $query->orderBy('head', 'desc')->orderBy('reply', 'desc')->take($take + 1);
         // 대상글의 작성자까지 eager load 로 조회하여야 되나
         // 대상글 작성자를 조회하는 relation 명을 지정할 수 없음.
+
+        //TODO 댓글 쿼리 기본형태 - [0 : 대댓글, 1 : 댓글]
+        //TODO 원댓글 - 대댓글 순으로 data 정렬 [0 : 댓글, 1 : 대댓글]
         $comments = $query->with('target.commentable')->get();
+
+        $head = '';
+        $reply = '';
+
+        if(count($comments) !== 0) {
+            $head = $comments[0]->head;
+            $reply = $comments[0]->reply;
+        }
+
+        $comments = $comments->reverse()->values();
         foreach ($comments as $comment) {
             $handler->bindUserVote($comment);
             $comment->writer_profile = app('xe.user')->users()->where('id', $comment->user_id)->first()->getProfileImage();
@@ -71,6 +84,8 @@ class BoardApiController extends BaseController
             'totalCount' => $totalCount,
             'hasMore' => $comments->hasMorePages(),
             'items' => $comments,
+            'head' => $head,
+            'reply' => $reply
         ]);
 
     }
