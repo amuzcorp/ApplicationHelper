@@ -32,10 +32,10 @@ class BoardApiController extends BaseController
 
         $targetCommentList = \DB::table('comment_target')->where('target_id', $targetId)->pluck('doc_id');
         $comments = Comment::whereIn('id', $targetCommentList)->where('instance_id', $instanceId)
-            ->orderBy('head', 'asc')
+            ->orderBy('head', 'desc')
             ->orderBy('created_at', 'asc')
             ->where('display', '!=', Comment::DISPLAY_HIDDEN)
-            ->paginate($take + 1, ['*'], 'page', $page);
+            ->paginate(30, ['*'], 'page', $page);
 
         // 댓글 총 수
         $totalCount = $comments->total();
