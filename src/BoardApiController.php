@@ -7,6 +7,7 @@ use XeFrontend;
 use XePresenter;
 use App\Http\Controllers\Controller as BaseController;
 use Xpressengine\Plugins\Comment\Models\Comment;
+use Xpressengine\Plugins\Comment\Models\Target;
 
 class BoardApiController extends BaseController
 {
@@ -30,29 +31,21 @@ class BoardApiController extends BaseController
         $take = $request->get('perPage', $config['perPage']);
 
         //쿼리 시작
-        $query = Comment::where('instance_id', $instanceId);
-
-        $query->leftJoin('comment_target',
-            function (JoinClause $join) {
-                $join->on('documents.id','=','comment_target.target_id');
-            }
-        );
-
-        $query->orderBy('head', 'desc')
+        $query = Target::with('comment')->orderBy('head', 'desc')
             ->orderBy('created_at', 'asc')
             ->where('display', '!=', Comment::DISPLAY_HIDDEN);
 
         $target_ids = $request->get('target_ids');
         if($target_ids != null){
-            $query->whereIn('comment_target.target_id',json_dec($target_ids));
+            $query->whereIn('target_id',json_dec($target_ids));
         }else{
-            $query->where('comment_target.target_id',$request->get('target_id'));
+            $query->where('target_id',$request->get('target_id'));
         }
 
-        $comments = $query->paginate(30, ['*'], 'page', $page);
+        $comments = $query->get();
 
         // 댓글 총 수
-        $totalCount = $comments->total();
+        $totalCount = $query->count();
 
         foreach ($comments as $comment) {
             $handler->bindUserVote($comment);
