@@ -13,11 +13,9 @@ class BoardApiController extends BaseController
     public function getItem(Request $request) {
 
         $this->validate($request, [
-            'targetId' => 'required',
             'instanceId' => 'required'
         ]);
 
-        $targetId = $request->get('targetId');
         $instanceId = $request->get('instanceId');
         $page = $request->get('page') ?: 1;
 
@@ -30,12 +28,27 @@ class BoardApiController extends BaseController
 
         $take = $request->get('perPage', $config['perPage']);
 
-        $targetCommentList = \DB::table('comment_target')->where('target_id', $targetId)->pluck('doc_id');
-        $comments = Comment::whereIn('id', $targetCommentList)->where('instance_id', $instanceId)
+        //쿼리 시작
+        $query = Comment::where('instance_id', $instanceId)
             ->orderBy('head', 'desc')
             ->orderBy('created_at', 'asc')
-            ->where('display', '!=', Comment::DISPLAY_HIDDEN)
-            ->paginate(30, ['*'], 'page', $page);
+            ->where('display', '!=', Comment::DISPLAY_HIDDEN);
+
+        if($request->get('target_ids') != null && $request->get('target_ids') != '') {
+
+            $targetId = is_array($request->get('target_ids')) ? $request->get('target_ids') : json_dec($request->get('target_ids'));
+            if (is_array($targetId)) {
+                $targetCommentList = \DB::table('comment_target')->whereIn('target_id', $targetId)->pluck('doc_id');
+            } else {
+                $targetCommentList = \DB::table('comment_target')->where('target_id', $targetId)->pluck('doc_id');
+            }
+
+            if(count($targetCommentList) !== 0) {
+                $query->whereIn('id', $targetCommentList);
+            }
+        }
+
+        $comments = $query->paginate(30, ['*'], 'page', $page);
 
         // 댓글 총 수
         $totalCount = $comments->total();
