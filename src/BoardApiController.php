@@ -1,6 +1,7 @@
 <?php
 namespace Amuz\XePlugin\ApplicationHelper;
 
+use Illuminate\Database\Query\JoinClause;
 use Illuminate\Http\Request;
 use XeFrontend;
 use XePresenter;
@@ -29,23 +30,23 @@ class BoardApiController extends BaseController
         $take = $request->get('perPage', $config['perPage']);
 
         //쿼리 시작
-        $query = Comment::where('instance_id', $instanceId)
-            ->orderBy('head', 'desc')
+        $query = Comment::where('instance_id', $instanceId);
+
+        $query->leftJoin('comment_target',
+            function (JoinClause $join) {
+                $join->on('documents.id','=','comment_target.target_id');
+            }
+        );
+
+        $query->orderBy('head', 'desc')
             ->orderBy('created_at', 'asc')
             ->where('display', '!=', Comment::DISPLAY_HIDDEN);
 
-        if($request->get('target_ids') != null && $request->get('target_ids') != '') {
-
-            $targetId = is_array($request->get('target_ids')) ? $request->get('target_ids') : json_dec($request->get('target_ids'));
-            if (is_array($targetId)) {
-                $targetCommentList = \DB::table('comment_target')->whereIn('target_id', $targetId)->pluck('doc_id');
-            } else {
-                $targetCommentList = \DB::table('comment_target')->where('target_id', $targetId)->pluck('doc_id');
-            }
-
-            if(count($targetCommentList) !== 0) {
-                $query->whereIn('id', $targetCommentList);
-            }
+        $target_ids = $request->get('target_ids');
+        if($target_ids != null){
+            $query->whereIn('comment_target',json_dec($target_ids));
+        }else{
+            $query->where('comment_target',$request->get('target_id'));
         }
 
         $comments = $query->paginate(30, ['*'], 'page', $page);
