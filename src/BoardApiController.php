@@ -31,16 +31,17 @@ class BoardApiController extends BaseController
         $take = $request->get('perPage', $config['perPage']);
 
         //쿼리 시작
-        $query = Target::with('comment')->orderBy('head', 'desc')
+
+        $query = Comment::with(array('target' => function($query) use ($request){
+            $target_ids = $request->get('target_ids');
+            if($target_ids != null){
+                $query->whereIn('target_id',json_dec($target_ids));
+            } else {
+                $query->where('target_id',$request->get('target_id'));
+            }
+        }))->orderBy('head', 'desc')
             ->orderBy('created_at', 'asc')
             ->where('display', '!=', Comment::DISPLAY_HIDDEN);
-
-        $target_ids = $request->get('target_ids');
-        if($target_ids != null){
-            $query->whereIn('target_id',json_dec($target_ids));
-        }else{
-            $query->where('target_id',$request->get('target_id'));
-        }
 
         $comments = $query->get();
 
@@ -54,7 +55,7 @@ class BoardApiController extends BaseController
 
         return XePresenter::makeApi([
             'totalCount' => $totalCount,
-            'hasMore' => $comments->hasMorePages(),
+            'hasMore' => false,
             'items' => $comments,
             'page' => (int) $page
         ]);
