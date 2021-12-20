@@ -32,14 +32,14 @@ class BoardApiController extends BaseController
 
         //쿼리 시작
 
-        $query = Comment::with(array('target' => function($query) use ($request){
-            $target_ids = $request->get('target_ids');
-            if($target_ids != null){
-                $query->whereIn('target_id',json_dec($target_ids));
-            } else {
-                $query->where('target_id',$request->get('target_id'));
-            }
-        }))->orderBy('head', 'desc')
+        $query = Comment::whereHas('target', function($query) use ($request) {
+                $target_ids = $request->get('target_ids');
+                if($target_ids != null){
+                    $query->whereIn('target_id',json_dec($target_ids));
+                } else {
+                    $query->where('target_id',$request->get('target_id'));
+                }
+            })->with('target')->orderBy('head', 'desc')
             ->orderBy('created_at', 'asc')
             ->where('display', '!=', Comment::DISPLAY_HIDDEN);
 
