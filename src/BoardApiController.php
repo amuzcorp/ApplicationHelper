@@ -44,9 +44,9 @@ class BoardApiController extends BaseController
 
         $target_ids = $request->get('target_ids');
         if($target_ids != null){
-            $query->whereIn('comment_target',json_dec($target_ids));
+            $query->whereIn('comment_target.target_id',json_dec($target_ids));
         }else{
-            $query->where('comment_target',$request->get('target_id'));
+            $query->where('comment_target.target_id',$request->get('target_id'));
         }
 
         $comments = $query->paginate(30, ['*'], 'page', $page);
