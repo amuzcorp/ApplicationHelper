@@ -331,6 +331,7 @@
         for(let i = 0; i < banner_list.length; i++) {
             if(banner_list[i].id === id) {
                 banner_list.splice(i, 1);
+                document.getElementById(id).remove();
                 break;
             }
         }
