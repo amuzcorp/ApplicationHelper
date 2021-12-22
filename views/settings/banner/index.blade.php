@@ -234,7 +234,7 @@
                                 <td>${item.status}</td>
                                 <td>${item.created_at}</td>
                                 <td>
-                                    <a class="xe-btn xe-btn-xs xe-btn-default" onclick="selectBannerItem('${item.id}', '${item.group_id}'">배너 선택</a>
+                                    <a class="xe-btn xe-btn-xs xe-btn-default" onclick="selectBannerItem('${item.id}', '${item.group_id}')">배너 선택</a>
                                 </td>
                             </tr>
                         `;
