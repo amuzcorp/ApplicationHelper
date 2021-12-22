@@ -282,4 +282,18 @@ class Controller extends BaseController
             }
         }
     }
+
+    public function bannerItemData(Request $request) {
+        $this->validate($request, [
+            'item_id' => 'required'
+        ]);
+
+        $item_id = $request->get('item_id');
+
+        $bannerHandler = app('xe.banner');
+        $item = $bannerHandler->getItem($item_id);
+
+        return XePresenter::makeApi(['item' => $item]);
+    }
+
 }

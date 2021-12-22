@@ -9,6 +9,7 @@ use App\Http\Sections\SkinSection;
 use Xpressengine\Http\Request;
 use Xpressengine\Menu\Models\Menu;
 use Xpressengine\Routing\InstanceRoute;
+use Xpressengine\Plugins\Banner\Handler;
 
 class SettingsController extends BaseController
 {
@@ -169,4 +170,65 @@ class SettingsController extends BaseController
 
         return redirect()->back()->with('alert', ['type' => 'success', 'message' => xe_trans('xe::saved')]);
     }
+
+    public function banner_config_index(Handler $handler, Request $request) {
+        $title = '어플리케이션 배너 설정';
+        $description = '어플리케이션 배너 설정입니다';
+
+        // set browser title
+        XeFrontend::title($title);
+
+        $banner_group = $handler->getGroups();
+
+        $app_config = app('xe.config')->get('application_helper.app_config');
+
+        $main_banner = $app_config->get('banner_list');
+        foreach($main_banner as $key => $banner_item) {
+            $main_banner[$key] = $this->setBannerOptions($banner_item);
+        }
+
+        $content_banner = $app_config->get('content_banner_list');
+        foreach($content_banner as $key => $banner_item) {
+            $content_banner[$key] = $this->setBannerOptions($banner_item);
+        }
+
+        app('xe.config')->set('application_helper.app_config', [
+            'banner_list' => $main_banner,
+            'content_banner_list' => $content_banner
+        ]);
+
+        // output
+        return XePresenter::make('ApplicationHelper::views.settings.banner.index',
+            compact('title', 'description', 'banner_group', 'app_config', 'main_banner', 'content_banner'));
+    }
+
+    public function config_update(Request $request) {
+        $configs = json_dec($request->get('banner_list'));
+        $content_banner = json_dec($request->get('content_banner_list'));
+        app('xe.config')->set('application_helper.app_config', [
+            'banner_list' => $configs,
+            'content_banner_list' => $content_banner
+        ]);
+        return redirect()->back()->with('alert', ['type' => 'success', 'message' => xe_trans('xe::saved')]);
+    }
+
+    public function setBannerOptions($item) {
+        $bannerHandler = app('xe.banner');
+        $banner = $bannerHandler->getItem($item['id']);
+
+        $item['id'] = $banner->id;
+        $item['group_id'] = $banner->group_id;
+        $item['title'] = $banner->title;
+        $item['image_path'] = $banner->image['path'];
+        $item['image_id'] = $banner->image['id'];
+        $item['created_at'] = $banner->created_at;
+        $item['slide_time'] = (int) $item['slide_time'];
+        $item['content'] = $banner->content;
+        $item['link'] = $banner->link;
+        $item['link_target'] = $banner->link_target;
+        $item['group'] = $banner->group;
+
+        return $item;
+    }
+
 }

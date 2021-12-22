@@ -24,6 +24,27 @@ class Plugin extends AbstractPlugin
         $this->settingsRoute();
 
         $this->interceptDynamicField();
+
+        if(!app('xe.config')->get('application_helper.app_config')) {
+
+            app('xe.config')->set('application_helper', []);
+            app('xe.config')->set('application_helper.app_config', [
+                'banner_list' => [],
+                'content_banner_list' => []
+            ]);
+        } else {
+            if(!app('xe.config')->get('application_helper.app_config')->get('banner_list')) {
+                app('xe.config')->set('application_helper.app_config', [
+                    'banner_list' => []
+                ]);
+            }
+            if(!app('xe.config')->get('application_helper.app_config')->get('content_banner_list')) {
+                app('xe.config')->set('application_helper.app_config', [
+                    'content_banner_list' => []
+                ]);
+            }
+        }
+
     }
 
     protected function route()
@@ -67,6 +88,8 @@ class Plugin extends AbstractPlugin
 
                 //get Board Comment Data
                 Route::get('/comment/getItem', ['as' => 'ah::get_comment', 'uses' => 'Amuz\XePlugin\ApplicationHelper\BoardApiController@getItem']);
+
+                Route::get('/banner/getItem', ['as' => 'application_helper.get.banner.item', 'uses' => 'Amuz\XePlugin\ApplicationHelper\Controller@bannerItemData']);
         });
     }
 
@@ -101,6 +124,12 @@ class Plugin extends AbstractPlugin
             'display' => true,
             'ordering' => 900
         ]);
+        \XeRegister::push('settings/menu', 'setting.application_helper.mobile_banner', [
+            'title' => '모바일 배너설정',
+            'description' => '모바일 배너 설정입니다',
+            'display' => true,
+            'ordering' => 150
+        ]);
 
         Route::settings(static::getId(), function() {
             Route::group([
@@ -132,6 +161,18 @@ class Plugin extends AbstractPlugin
                     'as' => 'configSave',
                     'uses' => 'SettingsController@saveConfig'
                 ]);
+
+                Route::get('/settings', [
+                    'as' => 'banner_config',
+                    'uses' => 'SettingsController@banner_config_index',
+                    'settings_menu' => 'setting.application_helper.mobile_banner'
+                ]);
+
+                Route::post('/settings/banner_config_update', [
+                    'as' => 'banner_config.update',
+                    'uses' => 'SettingsController@config_update',
+                ]);
+
             });
         });
     }
@@ -214,6 +255,32 @@ class Plugin extends AbstractPlugin
                 $item->has_favorite = 0;
                 if(app('xe.board.handler')->hasFavorite($item->id, \Auth::user()->getId()) == true) $item->has_favorite = 1;
             }
+            return $query;
+        });
+
+        //배너 아이템에서 이미지 교체등이 발생할 경우 자동으로 업데이트 할 목적으로 작성
+        intercept('Xpressengine\Plugins\Banner\Handler@updateItem','af_update_banner_item',function($method, $item, $attrs){
+            $query = $method($item, $attrs);
+            if(!$query) return $query;
+
+            //배너 아이템문서에 업데이트 발생할 경우 어댑핏 어플리케이션 배너 정보 업데이트
+            $banner_list = app('xe.config')->get('application_helper.app_config')->get('banner_list');
+
+            foreach($banner_list as $key => $banner) {
+                if($banner['id'] === $query->id) {
+                    $banner_list[$key]['title'] = $query->title;
+                    $banner_list[$key]['group_id'] = $query->group_id;
+                    $banner_list[$key]['image_path'] = $query->image['path'];
+                    $banner_list[$key]['image_id'] = $query->image['id'];
+                    $banner_list[$key]['content'] = $query->content;
+                    $banner_list[$key]['link'] = $query->link;
+                    $banner_list[$key]['link_target'] = $query->link_target;
+                    $banner_list[$key]['group'] = $query->group;
+                }
+            }
+            app('xe.config')->set('application_helper.app_config', [
+                'banner_list' => $banner_list
+            ]);
             return $query;
         });
     }
