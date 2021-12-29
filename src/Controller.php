@@ -349,7 +349,7 @@ class Controller extends BaseController
     }
 
     public function user_groups() {
-        $userGorups = UserGroup::get()->keyBy('id');
+        $userGorups = UserGroup::get()->keyBy('name');
         return $userGorups;
     }
 
