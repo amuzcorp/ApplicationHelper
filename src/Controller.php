@@ -326,10 +326,4 @@ class Controller extends BaseController
 
         return XePresenter::makeApi(['error' => 0, 'message' => 'Complete', 'data' => $userList]);
     }
-
-    public function userGroupList(Request $request) {
-        $userGroupList = $request->get('group_id') ?: '';
-
-
-    }
 }
