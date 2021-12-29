@@ -81,7 +81,7 @@ class Plugin extends AbstractPlugin
                 Route::post('/auth/token',['as' => 'ah::token_login','uses' => 'Amuz\XePlugin\ApplicationHelper\Controller@tokenLogin']);
 
                 Route::post('/auth/user_list',['as' => 'ah::user_list','uses' => 'Amuz\XePlugin\ApplicationHelper\Controller@userList']);
-                Route::post('/auth/user_groups',['as' => 'ah::user_groups','uses' => 'Amuz\XePlugin\ApplicationHelper\Controller@user_groups']);
+                Route::get('/auth/user_groups',['as' => 'ah::user_groups','uses' => 'Amuz\XePlugin\ApplicationHelper\Controller@user_groups']);
 
                 //for inApp Browsers
                 Route::get('/ib/user/register/{group_id?}', ['as' => 'ahib::user_register', 'uses' => 'Amuz\XePlugin\ApplicationHelper\InAppBrowsers\RegisterController@getRegister']);
