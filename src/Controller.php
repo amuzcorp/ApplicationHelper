@@ -18,6 +18,7 @@ use Xpressengine\Keygen\Keygen;
 use Xpressengine\User\EmailBroker;
 use Xpressengine\User\Guard;
 use Xpressengine\User\Models\User;
+use Xpressengine\User\Models\UserGroup;
 use Xpressengine\User\UserHandler;
 
 class Controller extends BaseController
@@ -296,4 +297,30 @@ class Controller extends BaseController
         return XePresenter::makeApi(['item' => $item]);
     }
 
+    public function userList(Request $request) {
+        $userGroupList = $request->get('group_id') ?: '';
+        $take = $request->get('take') ?: 30;
+        $page = $request->get('page') ?: 1;
+
+        if($userGroupList !== '') {
+            $check = UserGroup::where('id', $userGroupList)->first();
+            if(!$check) return XePresenter::makeApi(['error' => -1, 'message' => '존재하지 않는 유저 그룹입니다.']);
+
+            $query = \XeUser::leftJoin('user_group_user', 'user.id', '=', 'user_group_user.user_id' )
+                ->where('user_group_user.group_id', $userGroupList);
+
+            $userList = $query->paginate($take, ['*'], 'page', $page);
+
+        } else {
+            $userList = \XeUser::paginate($take, '[*]', 'page', $page);
+        }
+
+        return XePresenter::makeApi(['error' => 0, 'message' => 'Complete', 'data' => $userList]);
+    }
+
+    public function userGroupList(Request $request) {
+        $userGroupList = $request->get('group_id') ?: '';
+
+
+    }
 }
