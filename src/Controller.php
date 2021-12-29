@@ -340,6 +340,7 @@ class Controller extends BaseController
                 $dummy = app('amuz.usertype.handler')->getDynamicFieldData($user_group->fieldTypes, $user_group->id, $user->id);
                 $key = array_keys($dummy)[0];
                 $user->$key = array_values($dummy)[0];
+                $user->addVisible($key);
                 $fieldData = array_merge($fieldData, $dummy);
             }
         }
@@ -368,6 +369,10 @@ class Controller extends BaseController
             $query->orderBy('display_name', 'asc');
         } elseif ($orderType == 'display_name_desc') {
             $query->orderBy('display_name', 'desc');
+        } elseif ($orderType == 'email_asc') {
+            $query->orderBy('email', 'asc');
+        } elseif ($orderType == 'email_desc') {
+            $query->orderBy('email', 'desc');
         } elseif ($orderType == 'login_id_asc') {
             $query->orderBy('login_id', 'asc');
         } elseif ($orderType == 'login_id_desc') {
