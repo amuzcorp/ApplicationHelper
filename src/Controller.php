@@ -20,6 +20,7 @@ use Xpressengine\User\Guard;
 use Xpressengine\User\Models\User;
 use Xpressengine\User\Models\UserGroup;
 use Xpressengine\User\UserHandler;
+use App\Facades\XeUser;
 
 class Controller extends BaseController
 {
@@ -298,32 +299,86 @@ class Controller extends BaseController
     }
 
     public function userList(Request $request) {
-        $userGroupList = $request->get('group_id') ?: '';
+        $userGroupId = $request->get('group_id') ?: '';
         $take = $request->get('take') ?: 30;
         $page = $request->get('page') ?: 1;
         $allGet = $request->get('all') === 'Y' ? $request->get('all') : 'N';
 
-        if($userGroupList !== '') {
-            $check = UserGroup::where('id', $userGroupList)->first();
+        if($userGroupId !== '') {
+            $check = UserGroup::where('id', $userGroupId)->first();
             if(!$check) return XePresenter::makeApi(['error' => -1, 'message' => '존재하지 않는 유저 그룹입니다.']);
 
-            $query = \XeUser::leftJoin('user_group_user', 'user.id', '=', 'user_group_user.user_id' )
-                ->where('user_group_user.group_id', $userGroupList);
+            $query = XeUser::leftJoin('user_group_user', 'user.id', '=', 'user_group_user.user_id' )
+                ->where('user.status', 'activated')
+                ->where('user_group_user.group_id', $userGroupId);
 
             if($allGet === 'Y') {
                 $userList = $query->get();
             } else {
                 $userList = $query->paginate($take, ['*'], 'page', $page);
             }
+            $this->makeOrder($query, $request);
 
         } else {
+            $query = XeUser::where('status', 'activated');
+
+            $this->makeOrder($query, $request);
             if($allGet === 'Y') {
-                $userList = \XeUser::get();
+                $userList = $query->get();
             } else {
-                $userList = \XeUser::paginate($take, '[*]', 'page', $page);
+                $userList = $query->paginate($take, ['*'], 'page', $page);
+            }
+        }
+
+        foreach($userList as $user) {
+            $user_groups = $user->groups;
+            $fieldData = [];
+            foreach ($user_groups as $user_group) {
+                $user_group->fieldTypes = app('xe.dynamicField')->gets($user_group->id);
+
+                // 그룹별 필드 데이터 불러와서 넣기
+                $dummy = app('amuz.usertype.handler')->getDynamicFieldData($user_group->fieldTypes, $user_group->id, $user->id);
+                $key = array_keys($dummy)[0];
+                $user->$key = array_values($dummy)[0];
+                $fieldData = array_merge($fieldData, $dummy);
             }
         }
 
         return XePresenter::makeApi(['error' => 0, 'message' => 'Complete', 'data' => $userList]);
+    }
+
+    public function user_groups() {
+        $userGorups = UserGroup::get();
+        return $userGorups;
+    }
+
+    public function makeOrder($query, $request)
+    {
+        $orderType = $request->get('order_type', '');
+
+        if ($orderType == '') {
+            // order_type 이 없을때만 dyFac Config 의 정렬을 우선 적용한다.
+            $orders = $request->get('orders', []);
+            foreach ($orders as $order) {
+                $arr_order = explode('|@|',$order);
+                $query->orderBy($arr_order[0], $arr_order[1]);
+            }
+
+        } elseif ($orderType == 'display_name_asc') {
+            $query->orderBy('display_name', 'asc');
+        } elseif ($orderType == 'display_name_desc') {
+            $query->orderBy('display_name', 'desc');
+        } elseif ($orderType == 'login_id_asc') {
+            $query->orderBy('login_id', 'asc');
+        } elseif ($orderType == 'login_id_desc') {
+            $query->orderBy('login_id', 'desc');
+        } elseif ($orderType == 'created_at_asc') {
+            $query->orderBy('created_at', 'asc');
+        } elseif ($orderType == 'created_at_desc') {
+            $query->orderBy('created_at', 'desc');
+        }
+        $query->getProxyManager()->orders($query->getQuery(), $request->all());
+
+        return $query;
     }
 }
