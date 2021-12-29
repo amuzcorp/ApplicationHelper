@@ -20,7 +20,8 @@ use Xpressengine\User\Guard;
 use Xpressengine\User\Models\User;
 use Xpressengine\User\Models\UserGroup;
 use Xpressengine\User\UserHandler;
-use App\Facades\XeUser;
+
+use Xpressengine\User\Models\User as XeUser;
 
 class Controller extends BaseController
 {
@@ -299,49 +300,43 @@ class Controller extends BaseController
     }
 
     public function userList(Request $request) {
-        $userGroupId = $request->get('group_id') ?: '';
-        $take = $request->get('take') ?: 30;
-        $page = $request->get('page') ?: 1;
-        $allGet = $request->get('all') === 'Y' ? $request->get('all') : 'N';
+        $userGroupId = $request->get('group_id', '');
+        $take = $request->get('take', 30);
+        $page = $request->get('page', 1);
+
+        $query = XeUser::where('status', 'activated');
 
         if($userGroupId !== '') {
-            $check = UserGroup::where('id', $userGroupId)->first();
-            if(!$check) return XePresenter::makeApi(['error' => -1, 'message' => '존재하지 않는 유저 그룹입니다.']);
+            $query->whereHas('groups', function($q) use ($userGroupId){
+                $q->where('group_id',$userGroupId);
+            });
+        }
 
-            $query = XeUser::leftJoin('user_group_user', 'user.id', '=', 'user_group_user.user_id' )
-                ->where('user.status', 'activated')
-                ->where('user_group_user.group_id', $userGroupId);
+        $query->with('groups');
+        $this->makeOrder($query, $request);
 
-            if($allGet === 'Y') {
-                $userList = $query->get();
-            } else {
-                $userList = $query->paginate($take, ['*'], 'page', $page);
-            }
-            $this->makeOrder($query, $request);
-
+        if($request->get('all', 'N') === 'Y') {
+            $userList = $query->get();
         } else {
-            $query = XeUser::where('status', 'activated');
-
-            $this->makeOrder($query, $request);
-            if($allGet === 'Y') {
-                $userList = $query->get();
-            } else {
-                $userList = $query->paginate($take, ['*'], 'page', $page);
-            }
+            $userList = $query->paginate($take, ['*'], 'page', $page);
         }
 
         foreach($userList as $user) {
             $user_groups = $user->groups;
+
             $fieldData = [];
             foreach ($user_groups as $user_group) {
                 $user_group->fieldTypes = app('xe.dynamicField')->gets($user_group->id);
 
                 // 그룹별 필드 데이터 불러와서 넣기
                 $dummy = app('amuz.usertype.handler')->getDynamicFieldData($user_group->fieldTypes, $user_group->id, $user->id);
-                $key = array_keys($dummy)[0];
-                $user->$key = array_values($dummy)[0];
-                $user->addVisible($key);
-                $fieldData = array_merge($fieldData, $dummy);
+
+                $key = array_get(array_keys($dummy),0);
+                if($key != null){
+                    $user->$key = array_get(array_values($dummy), 0);
+                    $user->addVisible($key);
+                    $fieldData = array_merge($fieldData, $dummy);
+                }
             }
         }
 
