@@ -330,13 +330,11 @@ class Controller extends BaseController
 
                 // 그룹별 필드 데이터 불러와서 넣기
                 $dummy = app('amuz.usertype.handler')->getDynamicFieldData($user_group->fieldTypes, $user_group->id, $user->id);
-
-                $key = array_get(array_keys($dummy),0);
-                if($key != null){
-                    $user->$key = array_get(array_values($dummy), 0);
+                foreach($dummy as $key => $val){
+                    $user->$key = $val;
                     $user->addVisible($key);
-                    $fieldData = array_merge($fieldData, $dummy);
                 }
+                $fieldData = array_merge($fieldData, $dummy);
             }
         }
 
