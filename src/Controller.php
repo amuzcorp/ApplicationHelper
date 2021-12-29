@@ -301,6 +301,7 @@ class Controller extends BaseController
         $userGroupList = $request->get('group_id') ?: '';
         $take = $request->get('take') ?: 30;
         $page = $request->get('page') ?: 1;
+        $allGet = $request->get('all') === 'Y' ? $request->get('all') : 'N';
 
         if($userGroupList !== '') {
             $check = UserGroup::where('id', $userGroupList)->first();
@@ -309,10 +310,18 @@ class Controller extends BaseController
             $query = \XeUser::leftJoin('user_group_user', 'user.id', '=', 'user_group_user.user_id' )
                 ->where('user_group_user.group_id', $userGroupList);
 
-            $userList = $query->paginate($take, ['*'], 'page', $page);
+            if($allGet === 'Y') {
+                $userList = $query->get();
+            } else {
+                $userList = $query->paginate($take, ['*'], 'page', $page);
+            }
 
         } else {
-            $userList = \XeUser::paginate($take, '[*]', 'page', $page);
+            if($allGet === 'Y') {
+                $userList = \XeUser::get();
+            } else {
+                $userList = \XeUser::paginate($take, '[*]', 'page', $page);
+            }
         }
 
         return XePresenter::makeApi(['error' => 0, 'message' => 'Complete', 'data' => $userList]);
