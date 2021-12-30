@@ -306,6 +306,7 @@ class Controller extends BaseController
 
         $query = XeUser::where('status', 'activated');
 
+        //그룹찾기
         if($userGroupId !== '') {
             $query->whereHas('groups', function($q) use ($userGroupId){
                 $q->where('group_id',$userGroupId);
