@@ -191,7 +191,7 @@ class Controller extends BaseController
                 $this->auth->login($user);
 
                 $retObj->setMessage("로그인에 성공하였습니다.");
-                $retObj->set('user',$user);
+                $retObj->set('user',$this->arrangeUserInfo($user));
                 $retObj->set('remember_token',$token_info->token);
             }
         }else{
@@ -243,7 +243,7 @@ class Controller extends BaseController
                     $user_token->save();
 
                     $retObj->setMessage("로그인에 성공하였습니다.");
-                    $retObj->set('user',$user);
+                    $retObj->set('user',$this->arrangeUserInfo($user));
                     $retObj->set('remember_token',$token);
                     break;
             }
@@ -322,22 +322,7 @@ class Controller extends BaseController
             $userList = $query->paginate($take, ['*'], 'page', $page);
         }
 
-        foreach($userList as $user) {
-            $user_groups = $user->groups;
-
-            $fieldData = [];
-            foreach ($user_groups as $user_group) {
-                $user_group->fieldTypes = app('xe.dynamicField')->gets($user_group->id);
-
-                // 그룹별 필드 데이터 불러와서 넣기
-                $dummy = app('amuz.usertype.handler')->getDynamicFieldData($user_group->fieldTypes, $user_group->id, $user->id);
-                foreach($dummy as $key => $val){
-                    $user->$key = $val;
-                    $user->addVisible($key);
-                }
-                $fieldData = array_merge($fieldData, $dummy);
-            }
-        }
+        foreach($userList as $key => $user) $userList[$key] = $this->arrangeUserInfo($user);
 
         return XePresenter::makeApi(['error' => 0, 'message' => 'Complete', 'data' => $userList]);
     }
@@ -379,5 +364,25 @@ class Controller extends BaseController
         $query->getProxyManager()->orders($query->getQuery(), $request->all());
 
         return $query;
+    }
+
+    private function arrangeUserInfo($user){
+        $user_groups = $user->groups;
+        $user->addVisible('groups');
+
+        $xeDynamicField = app('xe.dynamicField');
+        $userTypeHandler = app('amuz.usertype.handler');
+
+        foreach ($user_groups as $user_group) {
+            $user_group->fieldTypes = $xeDynamicField->gets($user_group->id);
+
+            // 그룹별 필드 데이터 불러와서 넣기
+            $dummy = $userTypeHandler->getDynamicFieldData($user_group->fieldTypes, $user_group->id, $user->id);
+            foreach($dummy as $key => $val){
+                $user->$key = $val;
+                $user->addVisible($key);
+            }
+        }
+        return $user;
     }
 }
