@@ -133,7 +133,7 @@ class Controller extends BaseController
         $retObj = new BaseObject();
         $retObj->set('site_key',$site_key);
         $retObj->set('menu_list',$menu_list);
-        dd($retObj);
+//        dd($retObj);
         return $retObj->output();
     }
 
