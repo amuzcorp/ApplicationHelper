@@ -85,9 +85,10 @@ class Plugin extends AbstractPlugin
 
                 //for inApp Browsers
                 Route::get('/ib/user/register/{group_id?}', ['as' => 'ahib::user_register', 'uses' => 'Amuz\XePlugin\ApplicationHelper\InAppBrowsers\RegisterController@getRegister']);
-//                Route::get('/ib/user/register/{group_id?}', ['as' => 'ahib::user_register_before', 'uses' => 'Amuz\XePlugin\ApplicationHelper\Controller@getRegister']);
-//                Route::get('/ib/user/regAfter/{group_id?}', ['as' => 'ahib::user_register', 'uses' => 'Amuz\XePlugin\ApplicationHelper\InAppBrowsers\RegisterController@getRegister']);
                 Route::post('/ib/user/register/{group_id?}', ['as' => 'ahib::user_register.store', 'uses' => 'Amuz\XePlugin\ApplicationHelper\InAppBrowsers\RegisterController@postRegister']); // for store
+
+                Route::get('/ib/board/{instance_id}/create', ['as' => 'ahib::board_create', 'uses' => 'Amuz\XePlugin\ApplicationHelper\InAppBrowsers\RegisterController@getBoardCreate']);
+                Route::get('/ib/cpt/{cpt_id}/create', ['as' => 'ahib::cpt_create', 'uses' => 'Amuz\XePlugin\ApplicationHelper\InAppBrowsers\RegisterController@getBoardCreate']);
 
                 //get Board Comment Data
                 Route::get('/comment/getItem', ['as' => 'ah::get_comment', 'uses' => 'Amuz\XePlugin\ApplicationHelper\BoardApiController@getItem']);

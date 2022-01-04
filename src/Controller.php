@@ -1,20 +1,18 @@
 <?php
 namespace Amuz\XePlugin\ApplicationHelper;
 
-use Amuz\XePlugin\ApplicationHelper\BaseObject;
 use Amuz\XePlugin\ApplicationHelper\Models\AhUserToken;
-use App\Http\Controllers\Auth\AuthController;
-use Faker\Provider\Base;
 use Illuminate\Foundation\Auth\AuthenticatesUsers;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Overcode\XePlugin\DynamicFactory\Handlers\CptModuleConfigHandler;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use XeFrontend;
 use XePresenter;
 use App\Http\Controllers\Controller as BaseController;
-use Xpressengine\Config\Repositories\CacheDecorator;
-use Xpressengine\Config\Repositories\DatabaseRepository;
 use Xpressengine\Keygen\Keygen;
+use Xpressengine\Plugins\Board\ConfigHandler;
+use Xpressengine\Plugins\Board\Services\BoardService;
 use Xpressengine\User\EmailBroker;
 use Xpressengine\User\Guard;
 use Xpressengine\User\Models\User;
@@ -83,14 +81,8 @@ class Controller extends BaseController
         $retObj->set('config_list',$config_list);
         return $retObj->output();
     }
-//
-//    public function getRegister($group_id = null){
-////        dd($this->auth->user());
-//        $this->auth->logout();
-//        return redirect()->to(route('ahib::user_register',['group_id'=>$group_id]));
-//    }
 
-    public function getNavigator($menu_key){
+    public function getNavigator(BoardService $boardService,ConfigHandler $boardConfigHandler, CptModuleConfigHandler $cptModuleConfigHandler, $menu_key){
         $site_key = \XeSite::getCurrentSiteKey();
         $xe_config = app('xe.config');
         $ah_config = $xe_config->get('application_helper');
@@ -102,15 +94,46 @@ class Controller extends BaseController
 
         $menu_list = \DB::table('menu_item')->where('menu_id',$menu_id)->where('site_key',$site_key)->orderBy('ordering','asc')->get();
         foreach($menu_list as $menu){
-            $skin = array_get(array_get($instance_configs,$menu->id,[]),'skin');
-            $state = array_get(array_get($instance_configs,$menu->id,[]),'state');
+            $skin = array_get(array_get($instance_configs,$menu->id,[]),'skin','list');
             $menu->skin = $skin;
-            $menu->state = $state;
+
+            switch($menu->type){
+                case "board@board" :
+                    $config = $boardConfigHandler->get($menu->id);
+                    $menu->categories = [
+                        'category' => [
+                                'group' => 'tax_category',
+                                'items' => $boardService->getCategoryItemsTree($config)
+                            ]
+                    ];
+                    $menu->create_url = route('ahib::board_create',['instance_id' => $menu->id]);
+                    break;
+                case "cpt@cpt" :
+                    $config = $cptModuleConfigHandler->get($menu->id);
+                    $taxonomyHandler = app('overcode.df.taxonomyHandler');
+                    $taxonomies = $taxonomyHandler->getTaxonomies($config->get('cpt_id'));
+                    $categories = [];
+
+                    foreach($taxonomies as $taxonomy) {
+                        $categories[$taxonomy->extra->slug]['group'] = $taxonomyHandler->getTaxFieldGroup($taxonomy->id);
+                        //TODO : 언젠가 필요하면 확장필드를 붙여주자 :)
+//                        $categories[$taxonomy->extra->slug]['items'] = $taxonomyHandler->getCategoryItemAttributes($taxonomy->id,$categories[$taxonomy->extra->slug]['group']);
+                        $categories[$taxonomy->extra->slug]['items'] = $taxonomyHandler->getCategoryItemsTree($taxonomy->id,$categories[$taxonomy->extra->slug]['group']);
+                    }
+                    $menu->categories = $categories;
+
+                    $menu->create_url = route('ahib::cpt_create',['cpt_id'=>$config->get('cpt_id')]);
+                case "widgetpage@widgetpage" :
+                    break;
+                default :
+                    break;
+            }
         }
 
         $retObj = new BaseObject();
         $retObj->set('site_key',$site_key);
         $retObj->set('menu_list',$menu_list);
+        dd($retObj);
         return $retObj->output();
     }
 

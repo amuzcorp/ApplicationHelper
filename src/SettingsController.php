@@ -154,13 +154,13 @@ class SettingsController extends BaseController
 
             case "instances" :
                     $skins = $request->get('skin');
-                    $states = $request->get('state');
+//                    $states = $request->get('state');
 
                     $options = [];
                     foreach($skins as $instance_id => $skin){
                         $options[$instance_id] = [
                             'skin' => $skin,
-                            'state' => $states[$instance_id],
+//                            'state' => $states[$instance_id],
                         ];
                     }
 

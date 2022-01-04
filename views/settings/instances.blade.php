@@ -32,7 +32,6 @@
                                                         <th scope="col">인스턴스 타입</th>
                                                         <th scope="col">슬러그</th>
                                                         <th scope="col">스킨</th>
-                                                        <th scope="col">대상 State</th>
                                                     </tr>
                                                     </thead>
                                                     <tbody id="ah_navigator_warp">
@@ -49,9 +48,6 @@
                                                             </td>
                                                             <td>
                                                                 <input type="text" class="form-control" name="skin[{{$instance->instance_id}}]" value="{{ array_get(array_get($instance_configs,$instance->instance_id,[]),'skin') }}" />
-                                                            </td>
-                                                            <td>
-                                                                <input type="number" class="form-control" name="state[{{$instance->instance_id}}]" value="{{ array_get(array_get($instance_configs,$instance->instance_id,[]),'state') }}" />
                                                             </td>
                                                         </tr>
                                                     @endforeach
