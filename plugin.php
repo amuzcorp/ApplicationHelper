@@ -74,7 +74,8 @@ class Plugin extends AbstractPlugin
                 //get lists
                 Route::get('/instance/list', ['as' => 'ah::instance_list', 'uses' => 'Amuz\XePlugin\ApplicationHelper\Controller@getInstance']);
                 Route::get('/navigator/{menu_key}', ['as' => 'ah::navigator_list', 'uses' => 'Amuz\XePlugin\ApplicationHelper\Controller@getNavigator']);
-                Route::get('/taxonomies/{taxonomy_key}', ['as' => 'ah::taxonomy_list', 'uses' => 'Amuz\XePlugin\ApplicationHelper\Controller@getTaxonomies']);
+                Route::get('/taxonomies/{cpd_id}', ['as' => 'ah::taxonomy_list', 'uses' => 'Amuz\XePlugin\ApplicationHelper\Controller@getTaxonomiesByCptId']);
+                Route::get('/taxonomyItems/{taxonomyKey}', ['as' => 'ah::taxonomy', 'uses' => 'Amuz\XePlugin\ApplicationHelper\Controller@getTaxonomiesByTaxonomyId']);
 
                 //use API Controller
                 Route::post('/auth/login',['as' => 'ah::post_login','uses' => 'Amuz\XePlugin\ApplicationHelper\Controller@postLogin']);

@@ -6,6 +6,7 @@ use Illuminate\Foundation\Auth\AuthenticatesUsers;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Overcode\XePlugin\DynamicFactory\Handlers\CptModuleConfigHandler;
+use Overcode\XePlugin\DynamicFactory\Models\CategoryExtra;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use XeFrontend;
 use XePresenter;
@@ -138,13 +139,25 @@ class Controller extends BaseController
     }
 
     //for dynamic factory
-    public function getTaxonomies($taxonomy_key) {
-        $taxonomies = app('overcode.df.taxonomyHandler')->getTaxonomies($taxonomy_key);
+    public function getTaxonomiesByTaxonomyId($taxonomyKey) {
+        $taxonomy = CategoryExtra::find($taxonomyKey);
+        if($taxonomy == null) $taxonomy = CategoryExtra::where('slug',$taxonomyKey)->first();
+
+        $taxonomyHandler = app('overcode.df.taxonomyHandler');
+        $items = $taxonomyHandler->getCategoryItemsTree($taxonomy->category_id)->toArray();
+        sort($items);
+
+        return XePresenter::makeApi(['error' => 0, 'message' => 'Complete', 'data' => $items]);
+    }
+
+    public function getTaxonomiesByCptId($cpd_id) {
+        $taxonomyHandler = app('overcode.df.taxonomyHandler');
+        $taxonomies = $taxonomyHandler->getTaxonomies($cpd_id);
         if($taxonomies == null) return;
 
         foreach($taxonomies as $taxonomy) {
             $taxonomy->name = xe_trans($taxonomy->name);
-            $items = app('overcode.df.taxonomyHandler')->getCategoryItemsTree($taxonomy->id)->toArray();
+            $items = $taxonomyHandler->getCategoryItemsTree($taxonomy->id)->toArray();
             sort($items);
 
             $taxonomy->item = $items;
