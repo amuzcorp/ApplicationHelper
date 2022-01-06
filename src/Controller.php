@@ -372,7 +372,8 @@ class Controller extends BaseController
                     + sin(radians(" . $near['lat'] . "))
                     * sin(radians(`lat`))))";
 
-            $query->selectRaw("{$haversine} AS distance")
+            $query->select("*")
+                ->selectRaw("{$haversine} AS distance")
                 ->whereRaw("{$haversine} < ?", [$near['limit_distance']]);
         }
 
