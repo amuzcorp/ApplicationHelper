@@ -353,9 +353,9 @@ class Controller extends BaseController
         $this->makeOrder($query, $request);
 
         if($request->get('all', 'N') === 'Y') {
-            $userList = $query->get();
+            $userList = $query->get()->keyBy('id');
         } else {
-            $userList = $query->paginate($take, ['*'], 'page', $page);
+            $userList = $query->paginate($take, ['*'], 'page', $page)->keyBy('id');
         }
 
         foreach($userList as $key => $user) $userList[$key] = $this->arrangeUserInfo($user);
