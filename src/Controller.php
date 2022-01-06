@@ -379,21 +379,23 @@ class Controller extends BaseController
         $query->with('groups');
         $this->makeOrder($query, $request);
 
-        $userList = $query->paginate($perPage, ['*'], 'page', $page)->keyBy('id');
-        $total = $userList->total();
-        $currentPage = $userList->currentPage();
+        $paginate = $query->paginate($perPage, ['*'], 'page', $page);
+        $total = $paginate->total();
+        $currentPage = $paginate->currentPage();
         $count = 0;
 
+        $userList = $paginate->getCollection()->keyBy('id');
         foreach($userList as $key => $user) $userList[$key] = $this->arrangeUserInfo($user);
+        $paginate->setCollection($userList);
 
         // 순번 필드를 추가하여 transform
-        $userList->getCollection()->transform(function ($paginate) use ($total, $perPage, $currentPage, &$count) {
+        $paginate->getCollection()->transform(function ($paginate) use ($total, $perPage, $currentPage, &$count) {
             $paginate->seq = ($total - ($perPage * ($currentPage - 1))) - $count;
             $count++;
             return $paginate;
         });
 
-        return XePresenter::makeApi(['error' => 0, 'message' => 'Complete', 'data' => $userList]);
+        return XePresenter::makeApi(['error' => 0, 'message' => 'Complete', 'data' => $paginate]);
     }
 
     public function user_groups() {
