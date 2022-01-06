@@ -404,6 +404,7 @@ class Controller extends BaseController
 
     private function arrangeUserInfo($user){
         $user_groups = $user->groups;
+        $user->setRelation('groups', $user->groups->keyBy('id'));
         $user->addVisible('groups');
 
         $xeDynamicField = app('xe.dynamicField');
@@ -412,12 +413,15 @@ class Controller extends BaseController
         foreach ($user_groups as $user_group) {
             $user_group->fieldTypes = $xeDynamicField->gets($user_group->id);
 
+            $fieldValues = [];
             // 그룹별 필드 데이터 불러와서 넣기
             $dummy = $userTypeHandler->getDynamicFieldData($user_group->fieldTypes, $user_group->id, $user->id);
             foreach($dummy as $key => $val){
+                $fieldValues[$key] = $val;
                 $user->$key = $val;
                 $user->addVisible($key);
             }
+            $user_group->fieldValues = $fieldValues;
         }
         return $user;
     }
