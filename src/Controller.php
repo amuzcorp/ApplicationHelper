@@ -395,7 +395,7 @@ class Controller extends BaseController
             return $paginate;
         });
 
-        return XePresenter::makeApi(['error' => 0, 'message' => 'Complete', 'data' => $paginate]);
+        return XePresenter::makeApi(['error' => 0, 'message' => 'Complete', 'paginate' => $paginate]);
     }
 
     public function user_groups() {
