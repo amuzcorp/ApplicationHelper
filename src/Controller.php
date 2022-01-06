@@ -227,7 +227,7 @@ class Controller extends BaseController
                 $this->auth->login($user);
 
                 $retObj->setMessage("로그인에 성공하였습니다.");
-                $retObj->set('user',$this->arrangeUserInfo($user));
+                $retObj->set('user',$this->arrangeUserInfo($user,$request));
                 $retObj->set('remember_token',$token_info->token);
             }
         }else{
@@ -279,7 +279,7 @@ class Controller extends BaseController
                     $user_token->save();
 
                     $retObj->setMessage("로그인에 성공하였습니다.");
-                    $retObj->set('user',$this->arrangeUserInfo($user));
+                    $retObj->set('user',$this->arrangeUserInfo($user,$request));
                     $retObj->set('remember_token',$token);
                     break;
             }
@@ -386,7 +386,7 @@ class Controller extends BaseController
         $count = 0;
 
         $userList = $paginate->getCollection()->keyBy('id');
-        foreach($userList as $key => $user) $userList[$key] = $this->arrangeUserInfo($user);
+        foreach($userList as $key => $user) $userList[$key] = $this->arrangeUserInfo($user,$request);
         $paginate->setCollection($userList);
 
         // 순번 필드를 추가하여 transform
@@ -438,10 +438,15 @@ class Controller extends BaseController
         return $query;
     }
 
-    private function arrangeUserInfo($user){
+    private function arrangeUserInfo($user,$request){
         $user_groups = $user->groups;
         $user->setRelation('groups', $user->groups->keyBy('id'));
         $user->addVisible('groups');
+
+        if($request->get('near_target','') != '' && $request->get('lat','') != '' && $request->get('lng','') != ''){
+            $user->addVisible('field_id');
+            $user->addVisible('distance');
+        }
 
         $xeDynamicField = app('xe.dynamicField');
         $userTypeHandler = app('amuz.usertype.handler');
