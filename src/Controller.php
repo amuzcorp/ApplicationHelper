@@ -337,7 +337,7 @@ class Controller extends BaseController
 
     public function userList(Request $request) {
         $userGroupId = $request->get('group_id', '');
-        $take = $request->get('take', 30);
+        $perPage = $request->get('perPage', 30);
         $page = $request->get('page', 1);
 
         $query = XeUser::where('status', 'activated');
@@ -353,16 +353,46 @@ class Controller extends BaseController
             $query->where('id', '!=', $this->auth->user()->id);
         }
 
+        if($request->get('near_target','') != '' && $request->get('lat','') != '' && $request->get('lng','') != ''){
+            $near = [
+                'field_id' => $request->get('near_target'),
+                'lat' => $request->get('lat'),
+                'lng' => $request->get('lng'),
+                'limit_distance' => $request->get('limit_distance',20),
+            ];
+            $query->join('field_dynamic_field_extend_location', function ($join) use ($near){
+                $join->on('user.id', '=', 'field_dynamic_field_extend_location.target_id')
+                    ->where('field_dynamic_field_extend_location.field_id',$near['field_id']);
+            });
+
+            $haversine = "(6371 * acos(cos(radians(" . $near['lat'] . "))
+                    * cos(radians(`lat`))
+                    * cos(radians(`lng`)
+                    - radians(" . $near['lng'] . "))
+                    + sin(radians(" . $near['lat'] . "))
+                    * sin(radians(`lat`))))";
+
+            $query->select('id', 'users_id', 'cities_id')
+                ->selectRaw("{$haversine} AS distance")
+                ->whereRaw("{$haversine} < ?", [$near['limit_distance']]);
+        }
+
         $query->with('groups');
         $this->makeOrder($query, $request);
 
-        if($request->get('all', 'N') === 'Y') {
-            $userList = $query->get()->keyBy('id');
-        } else {
-            $userList = $query->paginate($take, ['*'], 'page', $page)->keyBy('id');
-        }
+        $userList = $query->paginate($perPage, ['*'], 'page', $page)->keyBy('id');
+        $total = $userList->total();
+        $currentPage = $userList->currentPage();
+        $count = 0;
 
         foreach($userList as $key => $user) $userList[$key] = $this->arrangeUserInfo($user);
+
+        // 순번 필드를 추가하여 transform
+        $userList->getCollection()->transform(function ($paginate) use ($total, $perPage, $currentPage, &$count) {
+            $paginate->seq = ($total - ($perPage * ($currentPage - 1))) - $count;
+            $count++;
+            return $paginate;
+        });
 
         return XePresenter::makeApi(['error' => 0, 'message' => 'Complete', 'data' => $userList]);
     }
