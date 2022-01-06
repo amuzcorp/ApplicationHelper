@@ -349,6 +349,10 @@ class Controller extends BaseController
             });
         }
 
+        if($request->get('exclude_auth','N') == "Y"){
+            $query->where('id', '!=', $this->auth->user()->id);
+        }
+
         $query->with('groups');
         $this->makeOrder($query, $request);
 
