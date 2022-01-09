@@ -147,7 +147,11 @@ class Controller extends BaseController
         $items = $taxonomyHandler->getCategoryItemsTree($taxonomy->category_id)->toArray();
         sort($items);
 
-        return XePresenter::makeApi(['error' => 0, 'message' => 'Complete', 'data' => $items]);
+        return XePresenter::makeApi(['error' => 0, 'message' => 'Complete', 'data' => [
+                'tree' => $items,
+                'items' => $taxonomyHandler->getCategoryItemAttributes($taxonomy->category_id)->keyBy('id')
+            ]
+        ]);
     }
 
     public function getTaxonomiesByCptId($cpd_id) {
