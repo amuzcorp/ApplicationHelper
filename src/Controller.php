@@ -50,12 +50,19 @@ class Controller extends BaseController
      */
     protected $emailBroker;
 
+    protected $xeDynamicField;
+    protected $userTypeHandler;
+
     public function __construct(Keygen $keygen)
     {
         $this->auth = app('auth');
         $this->handler = app('xe.user');
         $this->emailBroker = app('xe.auth.email');
         $this->keygen = $keygen;
+
+
+        $this->xeDynamicField = app('xe.dynamicField');
+        $this->userTypeHandler = app('amuz.usertype.handler');
     }
 
     public function index()
@@ -400,6 +407,8 @@ class Controller extends BaseController
             return $paginate;
         });
 
+        dd($paginate);
+
         return XePresenter::makeApi(['error' => 0, 'message' => 'Complete', 'paginate' => $paginate]);
     }
 
@@ -452,15 +461,13 @@ class Controller extends BaseController
             $user->addVisible('distance');
         }
 
-        $xeDynamicField = app('xe.dynamicField');
-        $userTypeHandler = app('amuz.usertype.handler');
-
         foreach ($user_groups as $user_group) {
-            $user_group->fieldTypes = $xeDynamicField->gets($user_group->id);
-
+            $user_group->fieldTypes = $this->xeDynamicField->gets($user_group->id);
             $fieldValues = [];
+
             // 그룹별 필드 데이터 불러와서 넣기
-            $dummy = $userTypeHandler->getDynamicFieldData($user_group->fieldTypes, $user_group->id, $user->id);
+            $dummy = $this->userTypeHandler->getDynamicFieldData($user_group->fieldTypes, $user_group->id, $user->id);
+
             foreach($dummy as $key => $val){
                 $fieldValues[$key] = $val;
                 $user->$key = $val;
