@@ -407,8 +407,6 @@ class Controller extends BaseController
             return $paginate;
         });
 
-        dd($paginate);
-
         return XePresenter::makeApi(['error' => 0, 'message' => 'Complete', 'paginate' => $paginate]);
     }
 
