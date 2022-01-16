@@ -478,6 +478,7 @@ class Controller extends BaseController
         if(Schema::hasTable('sendbird_user_token')){
             $sendBirdChatApp = app('amuz.sendbird.chat');
             $user->sendBird = $sendBirdChatApp->getSbToken($user->id);
+            $user->addVisible("sendBird");
         }
         return $user;
     }
