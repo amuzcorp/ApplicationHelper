@@ -10,6 +10,7 @@ use Overcode\XePlugin\DynamicFactory\Models\CategoryExtra;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use XeFrontend;
 use XePresenter;
+use Schema;
 use App\Http\Controllers\Controller as BaseController;
 use Xpressengine\Keygen\Keygen;
 use Xpressengine\Plugins\Board\ConfigHandler;
@@ -472,6 +473,11 @@ class Controller extends BaseController
                 $user->addVisible($key);
             }
             $user_group->fieldValues = $fieldValues;
+        }
+
+        if(Schema::hasTable('sendbird_user_token')){
+            $sendBird = new Amuz\XePlugin\SendBirdChat\Migration\Migration();
+            $user->sendBird = $sendBird->find($user->id);
         }
         return $user;
     }
