@@ -476,7 +476,7 @@ class Controller extends BaseController
         }
 
         if(Schema::hasTable('sendbird_user_token')){
-            $sendBird = new Amuz\XePlugin\SendBirdChat\Migration\Migration();
+            $sendBird = Amuz\XePlugin\SendBirdChat\Model\SendbirdToken::class;
             $user->sendBird = $sendBird->find($user->id);
         }
         return $user;
