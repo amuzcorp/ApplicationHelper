@@ -2,18 +2,22 @@
 namespace Amuz\XePlugin\ApplicationHelper;
 
 use Amuz\XePlugin\ApplicationHelper\Models\AhUserToken;
+use Carbon\Carbon;
 use Illuminate\Foundation\Auth\AuthenticatesUsers;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Overcode\XePlugin\DynamicFactory\Handlers\CptModuleConfigHandler;
 use Overcode\XePlugin\DynamicFactory\Models\CategoryExtra;
+use Overcode\XePlugin\DynamicFactory\Models\CptDocument;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use XeFrontend;
 use XePresenter;
 use Schema;
 use App\Http\Controllers\Controller as BaseController;
 use Xpressengine\Keygen\Keygen;
+use Xpressengine\Menu\Models\MenuItem;
 use Xpressengine\Plugins\Board\ConfigHandler;
+use Xpressengine\Plugins\Board\Models\Board;
 use Xpressengine\Plugins\Board\Services\BoardService;
 use Xpressengine\User\EmailBroker;
 use Xpressengine\User\Guard;
@@ -345,6 +349,41 @@ class Controller extends BaseController
         $item = $bannerHandler->getItem($item_id);
 
         return XePresenter::makeApi(['item' => $item]);
+    }
+
+//    이것은 마치 나의 필살기 by xiso
+    public function syncDocuments(Request $request, ConfigHandler $boardConfigHandler, CptModuleConfigHandler $cptModuleConfigHandler){
+        $target_instances = $request->get('target_instances','[]');
+        $target_instances = json_dec($target_instances);
+        $site_key = \XeSite::getCurrentSiteKey();
+
+        $returnDocuments = [];
+        foreach($target_instances as $target_instance){
+            $menu = MenuItem::where('url',$target_instance->slug)->first();
+            if(!$menu) continue;
+
+            $model = null;
+            switch($menu->type){
+                case "board@board" :
+                    $config = $boardConfigHandler->get($menu->id);
+                    $model = Board::division($menu->id);
+                    $model = $model->where('instance_id', $config->get('boardId'));
+                    break;
+                case "cpt@cpt" :
+                    $config = $cptModuleConfigHandler->get($menu->id);
+                    $model = CptDocument::division($config->get('cpt_id'), $site_key);
+                    $model = $model->where('instance_id', $config->get('cpt_id'));
+                    break;
+                default :
+                    break;
+            }
+            $documents = $model->where('site_key', $site_key)->where('updated_at','>',$target_instance->last_updated_at)->get();
+            $returnDocuments[$menu->url] = $documents ?: [];
+        }
+        return XePresenter::makeApi([
+            'last_updated_server_time' => Carbon::now()->format('Y-m-d H:i:s'),
+            'documents' => $returnDocuments ?: []
+        ]);
     }
 
     public function userList(Request $request) {

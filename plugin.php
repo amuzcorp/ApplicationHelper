@@ -93,8 +93,14 @@ class Plugin extends AbstractPlugin
 
                 //get Board Comment Data
                 Route::get('/comment/getItem', ['as' => 'ah::get_comment', 'uses' => 'Amuz\XePlugin\ApplicationHelper\BoardApiController@getItem']);
-
                 Route::get('/banner/getItem', ['as' => 'application_helper.get.banner.item', 'uses' => 'Amuz\XePlugin\ApplicationHelper\Controller@bannerItemData']);
+
+
+                //이것은 마치 나의 필살기
+                Route::post('/syncDocuments', [
+                    'as' => 'documents.sync',
+                    'uses' => 'Amuz\XePlugin\ApplicationHelper\Controller@syncDocuments'
+                ]);
         });
     }
 
@@ -172,12 +178,10 @@ class Plugin extends AbstractPlugin
                     'uses' => 'SettingsController@banner_config_index',
                     'settings_menu' => 'setting.application_helper.mobile_banner'
                 ]);
-
                 Route::post('/settings/banner_config_update', [
                     'as' => 'banner_config.update',
                     'uses' => 'SettingsController@config_update',
                 ]);
-
             });
         });
     }
