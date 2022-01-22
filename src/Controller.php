@@ -344,7 +344,6 @@ class Controller extends BaseController
         ]);
 
         $item_id = $request->get('item_id');
-
         $bannerHandler = app('xe.banner');
         $item = $bannerHandler->getItem($item_id);
 
@@ -377,7 +376,8 @@ class Controller extends BaseController
                 default :
                     break;
             }
-            $documents = $model->where('site_key', $site_key)->where('updated_at','>',$target_instance->last_updated_at)->get();
+            $model = $model->where('site_key', $site_key)->where('updated_at', '>=', $target_instance->last_updated_at);
+            $documents = $model->get();
             $returnDocuments[$menu->url] = $documents ?: [];
         }
         return XePresenter::makeApi([
