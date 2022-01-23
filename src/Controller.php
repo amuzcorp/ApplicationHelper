@@ -352,11 +352,23 @@ class Controller extends BaseController
 
 //    이것은 마치 나의 필살기 by xiso
     public function syncDocuments(Request $request, ConfigHandler $boardConfigHandler, CptModuleConfigHandler $cptModuleConfigHandler){
-        $target_instances = $request->get('target_instances','[]');
-        $target_instances = json_dec($target_instances);
+        $target_slug = $request->get('target_slug');
+        if(!$target_slug){
+            $target_instances = $request->get('target_instances','[]');
+            $target_instances = json_dec($target_instances) ?? $request->get('target_instances');
+        }else{
+            $target_instance = new \stdClass();
+            $target_instance->slug = $target_slug;
+            $target_instance->last_updated_at = "1970-01-01 00:00:00";
+            $target_instances = [$target_instance];
+        }
         $site_key = \XeSite::getCurrentSiteKey();
 
+        //호출 가능성이 있는 모든 텍소노미를 동기화한다.
+        $taxonomyHandler = app('overcode.df.taxonomyHandler');
+        $archives = [];
         $returnDocuments = [];
+
         foreach($target_instances as $target_instance){
             $menu = MenuItem::where('url',$target_instance->slug)->first();
             if(!$menu) continue;
@@ -367,17 +379,46 @@ class Controller extends BaseController
                     $config = $boardConfigHandler->get($menu->id);
                     $model = Board::division($menu->id);
                     $model = $model->where('instance_id', $config->get('boardId'));
+
+                    //TODO Board Category 들어올때 대응해야함. 준비안되있음 ^^* 보드카테고리 동작하면 에러날거임 :) 분명.
                     break;
                 case "cpt@cpt" :
                     $config = $cptModuleConfigHandler->get($menu->id);
                     $model = CptDocument::division($config->get('cpt_id'), $site_key);
                     $model = $model->where('instance_id', $config->get('cpt_id'));
+
+                    $archive = $taxonomyHandler->getTaxonomies($config->get('cpt_id'));
+                    foreach($archive as $taxonomy){
+                        $archives[$taxonomy->extra->slug] = $taxonomy;
+                        $archives[$taxonomy->extra->slug]->items = $taxonomyHandler->getCategoryItemAttributes($taxonomy->id)->keyBy('id');
+                    }
                     break;
                 default :
                     break;
             }
             $model = $model->where('site_key', $site_key)->where('updated_at', '>=', $target_instance->last_updated_at);
             $documents = $model->get();
+
+            //텍소노미를 붙이기 전에 부모 <-> 자식간의 데이터를 오버라이드 하여 싱크해준다.
+            $archives = arrangeTaxonomyItemsOverride($archives);
+
+            //arrange
+            foreach($documents as $document){
+                $selectedTaxonomyItems = $taxonomyHandler->getItemOnlyTargetId($document->id);
+                $result = [];
+                foreach($selectedTaxonomyItems as $taxonomyItem) {
+                    $category_Extra = CategoryExtra::where('category_id', $taxonomyItem->category_id)->first();
+                    $taxonomyItem->slug = $category_Extra->slug;
+
+                    $archive = $archives[$taxonomyItem->slug];
+                    $taxonomyItem->archive_title = $archive->name;
+                    if(!isset($result[$taxonomyItem->slug])) $result[$taxonomyItem->slug] = [];
+                    $result[$taxonomyItem->slug][] = array_merge((array)$taxonomyItem,$archive->items[$taxonomyItem->id]);
+                }
+                $document->selectedTaxonomyItems = json_encode($result);
+                //fortest
+//                unset($document->content,$document->pure_content);
+            }
             $returnDocuments[$menu->url] = $documents ?: [];
         }
         return XePresenter::makeApi([

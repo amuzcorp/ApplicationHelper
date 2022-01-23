@@ -97,7 +97,7 @@ class Plugin extends AbstractPlugin
 
 
                 //이것은 마치 나의 필살기
-                Route::post('/syncDocuments', [
+                Route::any('/syncDocuments', [
                     'as' => 'documents.sync',
                     'uses' => 'Amuz\XePlugin\ApplicationHelper\Controller@syncDocuments'
                 ]);
