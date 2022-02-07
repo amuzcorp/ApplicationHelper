@@ -66,7 +66,9 @@ class SettingsController extends BaseController
             'POST' => 'info',
             'PUT' => 'success',
             'DELETE' => 'danger',
-            'HEAD' => 'dark'
+            'HEAD' => 'dark',
+            'PATCH' => 'warning',
+            'OPTIONS' => 'secondary',
         ];
         // output
         return XePresenter::make('ApplicationHelper::views.settings.index', compact('_routes','_instance_routes','method_colors'));
@@ -117,13 +119,18 @@ class SettingsController extends BaseController
             "auth" => [
                     'title' => xe_trans('xe::userSingUpLoginSkin'),
                     'skin_id' => 'ahib/user/auth',
-                    'routes' => [
-                        [
-                            'title' => '회원가입',
-                            'description' => '가입 후 토큰을 반환하고 Closer로 이동합니다.',
-                            'url' => route('ahib::user_register')
-                        ]
-                    ]
+                ],
+            "user" => [
+                    'title' => xe_trans('xe::myPageSkin'),
+                    'skin_id' => 'ahib/user/settings',
+                ],
+            "board" => [
+                    'title' => xe_trans('board::board'),
+                    'skin_id' => 'ahib/board',
+                ],
+            "cpt" => [
+                    'title' => '사용자 정의 문서',
+                    'skin_id' => 'ahib/cpt',
                 ],
         ];
         foreach($skinSections as $section_id => $section){

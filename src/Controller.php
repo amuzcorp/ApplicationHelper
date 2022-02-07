@@ -119,7 +119,9 @@ class Controller extends BaseController
                                 'items' => $boardService->getCategoryItemsTree($config)
                             ]
                     ];
-                    $menu->create_url = route('ahib::board_create',['instance_id' => $menu->id]);
+                    $menu->create_url = route('ahib::board_create',['instance_id' => $menu->id],false);
+                    $menu->edit_url = route('ahib::board_edit',['instance_id' => $menu->id],false);
+                    $menu->delete_url = route('ahib::board_delete',['instance_id' => $menu->id],false);
                     break;
                 case "cpt@cpt" :
                     $config = $cptModuleConfigHandler->get($menu->id);
@@ -135,7 +137,10 @@ class Controller extends BaseController
                     }
                     $menu->categories = $categories;
 
-                    $menu->create_url = route('ahib::cpt_create',['cpt_id'=>$config->get('cpt_id')]);
+                    $menu->create_url = route('ahib::cpt_create',['slug' => $menu->url],false);
+                    $menu->edit_url = route('ahib::cpt_edit',['slug' => $menu->url],false);
+                    $menu->delete_url = route('ahib::cpt_delete',['slug' => $menu->url],false);
+//                    $menu->create_url = route('ahib::cpt_create',['cpt_id'=>$config->get('cpt_id')],false);
                 case "widgetpage@widgetpage" :
                     break;
                 default :
@@ -242,6 +247,14 @@ class Controller extends BaseController
                 $user = User::find($token_info->user_id);
                 $this->auth->login($user);
 
+                $deviceInfo = $retObj->get('deviceInfo');
+                //같은기기의 푸시토큰 업데이트
+                $token_info->push_token = $deviceInfo['push_token'];
+                $token_info->save();
+
+                //샌드버드플러그인이 설치되어있으면 토큰정보를 업데이트 해 준다.
+                $this->updateSendbirdToken($token_info);
+
                 $retObj->setMessage("로그인에 성공하였습니다.");
                 $retObj->set('user',$this->arrangeUserInfo($user,$request));
                 $retObj->set('remember_token',$token_info->token);
@@ -288,11 +301,13 @@ class Controller extends BaseController
                     $deviceInfo = $retObj->get('deviceInfo');
                     $deviceInfo['token'] = $token;
                     $deviceInfo['user_id'] = $user->id;
-
                     $user_token = AhUserToken::firstOrNew(['device_id' => $deviceInfo['device_id']]);
                     foreach($deviceInfo as $key => $val) $user_token->{$key} = $val;
 
                     $user_token->save();
+
+                    //샌드버드플러그인이 설치되어있으면 토큰정보를 업데이트 해 준다.
+                    $this->updateSendbirdToken($user_token);
 
                     $retObj->setMessage("로그인에 성공하였습니다.");
                     $retObj->set('user',$this->arrangeUserInfo($user,$request));
@@ -310,7 +325,7 @@ class Controller extends BaseController
         $deviceInfo = [
             'device_name' => $request->header('X-AMUZ-DEVICE-NAME'),
             'device_version' => $request->header('X-AMUZ-DEVICE-VERSION'),
-            'device_id' => $request->header('X-AMUZ-DEVICE-UUID'),
+            'device_id' => $request->header('X-AMUZ-DEVICE-UUID')
         ];
         foreach($deviceInfo as $key => $val){
             if($val == null){
@@ -318,6 +333,8 @@ class Controller extends BaseController
                 return $retObj->output();
             }
         }
+
+        if($request->hasHeader('X-AMUZ-PUSH-TOKEN')) $deviceInfo['push_token'] = $request->header('X-AMUZ-PUSH-TOKEN');
         $retObj->set('deviceInfo',$deviceInfo);
         return $retObj;
     }
@@ -528,6 +545,20 @@ class Controller extends BaseController
         $query->getProxyManager()->orders($query->getQuery(), $request->all());
 
         return $query;
+    }
+
+    private function updateSendbirdToken($tokenInfo){
+        //토큰이 있으면
+        if($tokenInfo->push_token == '' || $tokenInfo->push_token == null) return;
+
+        // 필요한 플러그인이 활성화 되어있는지 검사한다.
+        $pluginHandler = app('xe.plugin');
+        $sendbirdChat = $pluginHandler->getPlugin('sendbird_chat');
+        if (!$sendbirdChat || $sendbirdChat->getStatus() != 'activated') return;
+
+        $tokenType = "gcm";
+        if(str_starts_with($tokenInfo->device_name,"iPhone") || str_starts_with($tokenInfo->device_name,"iPad")) $tokenType = "apns";
+        app('amuz.sendbird.chat')->updateUserPushToken($tokenInfo->user_id,$tokenType,$tokenInfo->push_token);
     }
 
     private function arrangeUserInfo($user,$request){

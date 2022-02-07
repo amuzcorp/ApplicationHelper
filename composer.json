@@ -23,10 +23,25 @@
         "xpressengine": {
             "title": "애플리케이션 헬퍼",
             "component": {
-                "ahib/user/auth/skin/ApplicationHelper@defaultuser": {
-                    "name": "회원스킨",
-                    "description": "애플리케이션 헬퍼에 사용되는 인앱브라우저 전용 회원스킨입니다.",
+                "ahib/user/auth/skin/ApplicationHelper@defaultauth": {
+                    "name": "회원 인증",
+                    "description": "인앱브라우저 전용 회원가입/로그인 스킨입니다.",
+                    "class": "Amuz\\XePlugin\\ApplicationHelper\\Skins\\DefaultAuth\\DefaultAuth"
+                },
+                "ahib/user/settings/skin/ApplicationHelper@defaultuser": {
+                    "name": "회원설정",
+                    "description": "인앱브라우저 전용 회원 설정스킨입니다.",
                     "class": "Amuz\\XePlugin\\ApplicationHelper\\Skins\\DefaultUser\\DefaultUser"
+                },
+                "ahib/board/skin/ApplicationHelper@defaultboard": {
+                    "name": "게시판",
+                    "description": "인앱브라우저 전용 게시판 스킨입니다.",
+                    "class": "Amuz\\XePlugin\\ApplicationHelper\\Skins\\DefaultBoard\\DefaultBoard"
+                },
+                "ahib/cpt/skin/ApplicationHelper@defaultcpt": {
+                    "name": "사용자 정의 문서모듈",
+                    "description": "인앱브라우저 전용 사용자정의 문서모듈 스킨입니다.",
+                    "class": "Amuz\\XePlugin\\ApplicationHelper\\Skins\\DefaultCpt\\DefaultCpt"
                 }
             }
         }

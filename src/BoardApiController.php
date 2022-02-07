@@ -1,13 +1,11 @@
 <?php
 namespace Amuz\XePlugin\ApplicationHelper;
 
-use Illuminate\Database\Query\JoinClause;
 use Illuminate\Http\Request;
 use XeFrontend;
 use XePresenter;
 use App\Http\Controllers\Controller as BaseController;
 use Xpressengine\Plugins\Comment\Models\Comment;
-use Xpressengine\Plugins\Comment\Models\Target;
 
 class BoardApiController extends BaseController
 {

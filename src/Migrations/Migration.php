@@ -24,24 +24,27 @@ class Migration
      */
     public function up()
     {
-        Schema::create($this->table, function (Blueprint $table) {
-            $table->engine = "InnoDB";
+        if(!Schema::hasTable($this->table)) {
+            Schema::create($this->table, function (Blueprint $table) {
+                $table->engine = "InnoDB";
 
-            $table->string('token', 36)->nullable()->comment('token for keep login');
-            $table->string('user_id', 36)->comment('user ID');
+                $table->string('token', 36)->nullable()->comment('token for keep login');
+                $table->string('user_id', 36)->comment('user ID');
 
-            $table->string('device_name', 36);
-            $table->string('device_version', 36);
-            $table->string('device_id', 36);
+                $table->string('device_name', 36);
+                $table->string('device_version', 36);
+                $table->string('device_id', 36);
+                $table->string('push_token', 250);
 
-            $table->timestamp('created_at')->nullable()->index()->comment('created date');
-            $table->timestamp('updated_at')->nullable()->index()->comment('updated date');
+                $table->timestamp('created_at')->nullable()->index()->comment('created date');
+                $table->timestamp('updated_at')->nullable()->index()->comment('updated date');
 
-            $table->index('device_name');
-            $table->index('device_version');
-            $table->index('device_id');
-            $table->primary('token');
-        });
+                $table->index('device_name');
+                $table->index('device_version');
+                $table->index('device_id');
+                $table->primary('token');
+            });
+        }
     }
 
 

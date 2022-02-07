@@ -88,8 +88,19 @@ class Plugin extends AbstractPlugin
                 Route::get('/ib/user/register/{group_id?}', ['as' => 'ahib::user_register', 'uses' => 'Amuz\XePlugin\ApplicationHelper\InAppBrowsers\RegisterController@getRegister']);
                 Route::post('/ib/user/register/{group_id?}', ['as' => 'ahib::user_register.store', 'uses' => 'Amuz\XePlugin\ApplicationHelper\InAppBrowsers\RegisterController@postRegister']); // for store
 
-                Route::get('/ib/board/{instance_id}/create', ['as' => 'ahib::board_create', 'uses' => 'Amuz\XePlugin\ApplicationHelper\InAppBrowsers\RegisterController@getBoardCreate']);
-                Route::get('/ib/cpt/{cpt_id}/create', ['as' => 'ahib::cpt_create', 'uses' => 'Amuz\XePlugin\ApplicationHelper\InAppBrowsers\RegisterController@getBoardCreate']);
+                Route::get('/ib/board/{instance_id}', ['as' => 'ahib::board', 'uses' => 'Amuz\XePlugin\ApplicationHelper\InAppBrowsers\BoardController@index']);
+                Route::get('/ib/board/{instance_id}/create', ['as' => 'ahib::board_create', 'uses' => 'Amuz\XePlugin\ApplicationHelper\InAppBrowsers\BoardController@create']);
+                Route::get('/ib/board/{instance_id}/edit/{id?}', ['as' => 'ahib::board_edit', 'uses' => 'Amuz\XePlugin\ApplicationHelper\InAppBrowsers\BoardController@edit']);
+                Route::post('/ib/board/{instance_id}/store', ['as' => 'ahib::board_store', 'uses' => 'Amuz\XePlugin\ApplicationHelper\InAppBrowsers\BoardController@store']);
+                Route::post('/ib/board/{instance_id}/update', ['as' => 'ahib::board_update', 'uses' => 'Amuz\XePlugin\ApplicationHelper\InAppBrowsers\BoardController@update']);
+                Route::post('/ib/board/{instance_id}/destroy/{id?}', ['as' => 'ahib::board_delete', 'uses' => 'Amuz\XePlugin\ApplicationHelper\InAppBrowsers\BoardController@destroy']);
+
+                Route::get('/ib/cpt/{slug}', ['as' => 'ahib::cpt', 'uses' => 'Amuz\XePlugin\ApplicationHelper\InAppBrowsers\CptController@index']);
+                Route::get('/ib/cpt/{slug}/create', ['as' => 'ahib::cpt_create', 'uses' => 'Amuz\XePlugin\ApplicationHelper\InAppBrowsers\CptController@create']);
+                Route::get('/ib/cpt/{slug}/edit/{id?}', ['as' => 'ahib::cpt_edit', 'uses' => 'Amuz\XePlugin\ApplicationHelper\InAppBrowsers\CptController@edit']);
+                Route::post('/ib/cpt/{slug}/store', ['as' => 'ahib::cpt_store', 'uses' => 'Amuz\XePlugin\ApplicationHelper\InAppBrowsers\CptController@store']);
+                Route::post('/ib/cpt/{slug}/update', ['as' => 'ahib::cpt_update', 'uses' => 'Amuz\XePlugin\ApplicationHelper\InAppBrowsers\CptController@update']);
+                Route::post('/ib/cpt/{slug}/destroy/{id?}', ['as' => 'ahib::cpt_delete', 'uses' => 'Amuz\XePlugin\ApplicationHelper\InAppBrowsers\CptController@destroy']);
 
                 //get Board Comment Data
                 Route::get('/comment/getItem', ['as' => 'ah::get_comment', 'uses' => 'Amuz\XePlugin\ApplicationHelper\BoardApiController@getItem']);
