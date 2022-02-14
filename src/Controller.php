@@ -6,6 +6,8 @@ use Carbon\Carbon;
 use Illuminate\Foundation\Auth\AuthenticatesUsers;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Arr;
+use Laravel\Socialite\Contracts\Factory as Socialite;
 use Overcode\XePlugin\DynamicFactory\Handlers\CptModuleConfigHandler;
 use Overcode\XePlugin\DynamicFactory\Models\CategoryExtra;
 use Overcode\XePlugin\DynamicFactory\Models\CptDocument;
@@ -13,12 +15,18 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
 use XeFrontend;
 use XePresenter;
 use Schema;
+use XeDB;
 use App\Http\Controllers\Controller as BaseController;
 use Xpressengine\Keygen\Keygen;
 use Xpressengine\Menu\Models\MenuItem;
 use Xpressengine\Plugins\Board\ConfigHandler;
 use Xpressengine\Plugins\Board\Models\Board;
 use Xpressengine\Plugins\Board\Services\BoardService;
+use Xpressengine\Plugins\SocialLogin\Exceptions\ExistsAccountException;
+use Xpressengine\Plugins\SocialLogin\Exceptions\ExistsEmailException;
+use Xpressengine\Plugins\SocialLogin\Handler;
+use Xpressengine\Plugins\SocialLogin\Providers\KakaoProvider;
+use Xpressengine\Support\Exceptions\HttpXpressengineException;
 use Xpressengine\User\EmailBroker;
 use Xpressengine\User\Guard;
 use Xpressengine\User\Models\User;
@@ -240,7 +248,16 @@ class Controller extends BaseController
     {
         $retObj = $this->checkDeviceConnect($request);
         if($request->hasHeader('X-AMUZ-REMEMBER-TOKEN') && $request->hasHeader('X-AMUZ-DEVICE-UUID')){
-            $token_info = AhUserToken::where('device_id',$request->header('X-AMUZ-DEVICE-UUID'))->where('token',$request->header('X-AMUZ-REMEMBER-TOKEN'))->first();
+            $login_token = $request->get('login_token', '');
+            $user_id = $request->get('user_id', '');
+
+            //소셜로그인을 통한 최초 토큰로그인시 단한번 저장을 해준다
+            if($login_token != '' && $user_id != ''){
+                $token_info = AhUserToken::where('device_id',$request->header('X-AMUZ-DEVICE-UUID'))->where('user_id',$user_id)->where('token',$login_token)->first();
+            }else{
+                $token_info = AhUserToken::where('device_id',$request->header('X-AMUZ-DEVICE-UUID'))->where('token',$request->header('X-AMUZ-REMEMBER-TOKEN'))->first();
+            }
+
             if($token_info == null){
                 $retObj->addError('ERR_BROKEN_SESSION','잘못된 토큰이 전달되었습니다.');
             }else{
@@ -265,6 +282,7 @@ class Controller extends BaseController
 
         return $retObj->output();
     }
+
     /**
      * Handle a login request to the application.
      *
@@ -286,38 +304,89 @@ class Controller extends BaseController
 
         if ($this->auth->attempt($credentials, true)) {
             $user = $this->auth->user();
-
-            switch ($user->status) {
-                case User::STATUS_PENDING_ADMIN:
-                    $retObj->addError('ERR_PENDING_ADMIN','관리자 승인 대기중입니다.');
-                    break;
-
-                case User::STATUS_PENDING_EMAIL:
-                    $retObj->addError('ERR_PENDING_EMAIL','메일 인증이 완료되지 않았습니다.');
-                    break;
-
-                default:
-                    $token = $this->keygen->generate();
-                    $deviceInfo = $retObj->get('deviceInfo');
-                    $deviceInfo['token'] = $token;
-                    $deviceInfo['user_id'] = $user->id;
-                    $user_token = AhUserToken::firstOrNew(['device_id' => $deviceInfo['device_id']]);
-                    foreach($deviceInfo as $key => $val) $user_token->{$key} = $val;
-
-                    $user_token->save();
-
-                    //샌드버드플러그인이 설치되어있으면 토큰정보를 업데이트 해 준다.
-                    $this->updateSendbirdToken($user_token);
-
-                    $retObj->setMessage("로그인에 성공하였습니다.");
-                    $retObj->set('user',$this->arrangeUserInfo($user,$request));
-                    $retObj->set('remember_token',$token);
-                    break;
-            }
+            $retObj = $this->doLogin($request, $retObj,$user);
         }else{
             $retObj->addError('ERR_AccountNotFoundOrDisabled',xe_trans('xe::msgAccountNotFoundOrDisabled'));
         }
         return $retObj->output();
+    }
+
+    public function socialLogin(Request $request,Handler $socialLoginHandler,Socialite $socialite, $provider){
+        $retObj = $this->checkDeviceConnect($request);
+        $postData = json_dec($request->header('postData','[]'),true);
+        $retObj->set('provider',$provider);
+
+        $authedUser = json_dec(array_get($postData,'user'),true);
+        $authedToken = json_dec(array_get($postData,'token'),true);
+
+        switch($provider){
+            case "kakao" :
+                $is_email_valid = Arr::get($authedUser, 'kakao_account.is_email_valid');
+                $is_email_verified = Arr::get($authedUser, 'kakao_account.is_email_verified');
+
+                $userContract = (new \Laravel\Socialite\Two\User())->setRaw($authedUser)->map([
+                    'id'        => $authedUser['id'],
+                    'nickname'  => Arr::get($authedUser, 'properties.nickname'),
+                    'name'      => Arr::get($authedUser, 'properties.nickname'),
+                    'email'     => $is_email_valid && $is_email_verified ? Arr::get($authedUser, 'kakao_account.email') : null,
+                    'avatar'    => Arr::get($authedUser, 'properties.profile_image'),
+                ]);
+                break;
+        }
+        $userContract->setToken(Arr::get($authedToken, 'access_token'))
+            ->setRefreshToken(Arr::get($authedToken, 'refresh_token'))
+            ->setExpiresIn(Arr::get($authedToken, 'access_token_expires_at'));
+
+        if (app('xe.config')->getVal('user.register.joinable') === false) {
+            return redirect()->back()->with(
+                ['alert' => ['type' => 'danger', 'message' => xe_trans('xe::joinNotAllowed')]]
+            );
+        }
+
+        $userAccount = $socialLoginHandler->getRegisteredUserAccount($userContract, $provider);
+        if ($userAccount !== null) {
+            $user = $userAccount->user;
+            $retObj = $this->doLogin($request, $retObj, $user);
+            return redirect()->route('ah::closer',['remember_token'=>$retObj->get('remember_token'),'user'=>$retObj->get('user')]);
+        }
+
+        //가입된 계정이 없을 경우 회원가입
+        if (app('xe.config')->getVal('social_login.registerType', 'simple') === 'step' &&
+            $socialLoginHandler->checkNeedRegisterForm($userContract) === false) {
+
+            $userData = [
+                'email' => $userContract->getEmail(),
+                'contract_email' => $userContract->getEmail(),
+                'display_name' => $userContract->getNickname() ?: $userContract->getName(),
+                'account_id' => $userContract->getId(),
+                'provider_name' => $provider,
+                'token' => $userContract->token,
+                'token_secret' => $userContract->tokenSecret ?? ''
+            ];
+
+            XeDB::beginTransaction();
+            try {
+                $user = $socialLoginHandler->registerUser($userData);
+            } catch (ExistsAccountException $e) {
+                XeDB::rollback();
+                $this->throwHttpException(xe_trans('social_login::alreadyRegisteredAccount'), 409, $e);
+            } catch (ExistsEmailException $e) {
+                XeDB::rollback();
+                $this->throwHttpException(xe_trans('social_login::alreadyRegisteredEmail'), 409, $e);
+            } catch (\Throwable $e) {
+                XeDB::rollback();
+                throw $e;
+            }
+            XeDB::commit();
+
+            $retObj = $this->doLogin($request, $retObj, $user);
+            return redirect()->route('ah::closer',['remember_token'=>$retObj->get('remember_token'),'user'=>$retObj->get('user')]);
+        }
+
+        $request->session()->put('userContract', $userContract);
+        $request->session()->put('provider', $provider);
+
+        return redirect()->route('social_login::get_register_form');
     }
 
     protected function checkDeviceConnect(Request $request){
@@ -561,7 +630,41 @@ class Controller extends BaseController
         app('amuz.sendbird.chat')->updateUserPushToken($tokenInfo->user_id,$tokenType,$tokenInfo->push_token);
     }
 
+    private function doLogin($request, $retObj, $user){
+        switch ($user->status) {
+            case User::STATUS_PENDING_ADMIN:
+                $retObj->addError('ERR_PENDING_ADMIN','관리자 승인 대기중입니다.');
+                break;
+
+            case User::STATUS_PENDING_EMAIL:
+                $retObj->addError('ERR_PENDING_EMAIL','메일 인증이 완료되지 않았습니다.');
+                break;
+
+            default:
+                $token = $this->keygen->generate();
+                $deviceInfo = $retObj->get('deviceInfo');
+                $deviceInfo['token'] = $token;
+                $deviceInfo['user_id'] = $user->id;
+                $user_token = AhUserToken::firstOrNew(['device_id' => $deviceInfo['device_id']]);
+                foreach($deviceInfo as $key => $val) $user_token->{$key} = $val;
+
+                $user_token->save();
+
+                //샌드버드플러그인이 설치되어있으면 토큰정보를 업데이트 해 준다.
+                $this->updateSendbirdToken($user_token);
+
+                $retObj->setMessage("로그인에 성공하였습니다.");
+                $retObj->set('user',$this->arrangeUserInfo($user,$request));
+                $retObj->set('remember_token',$token);
+                break;
+        }
+        return $retObj;
+    }
+
     private function arrangeUserInfo($user,$request){
+        $user->addVisible('email');
+        $user->addVisible('login_id');
+
         $user_groups = $user->groups;
         $user->setRelation('groups', $user->groups->keyBy('id'));
         $user->addVisible('groups');
@@ -592,5 +695,23 @@ class Controller extends BaseController
             $user->addVisible("sendBird");
         }
         return $user;
+    }
+
+    /**
+     * throw http exception
+     *
+     * @param string $msg      massage
+     * @param null   $code     code
+     * @param null   $previous previous
+     *
+     * @return void
+     * @throws HttpXpressengineException
+     */
+    protected function throwHttpException($msg, $code = null, $previous = null)
+    {
+        $e = new HttpXpressengineException([], $code, $previous);
+        $e->setMessage($msg);
+
+        throw $e;
     }
 }

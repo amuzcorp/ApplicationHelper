@@ -3,9 +3,11 @@ namespace Amuz\XePlugin\ApplicationHelper;
 
 use Amuz\XePlugin\ApplicationHelper\Middleware\AmuzApiHelpers;
 use Amuz\XePlugin\ApplicationHelper\Migrations\Migration;
+use Illuminate\Support\Str;
 use Route;
 use Xpressengine\Http\Request;
 use Xpressengine\Plugin\AbstractPlugin;
+use Xpressengine\Plugins\SocialLogin\Handler;
 
 class Plugin extends AbstractPlugin
 {
@@ -77,13 +79,6 @@ class Plugin extends AbstractPlugin
                 Route::get('/taxonomies/{cpd_id}', ['as' => 'ah::taxonomy_list', 'uses' => 'Amuz\XePlugin\ApplicationHelper\Controller@getTaxonomiesByCptId']);
                 Route::get('/taxonomyItems/{taxonomyKey}', ['as' => 'ah::taxonomy', 'uses' => 'Amuz\XePlugin\ApplicationHelper\Controller@getTaxonomiesByTaxonomyId']);
 
-                //use API Controller
-                Route::post('/auth/login',['as' => 'ah::post_login','uses' => 'Amuz\XePlugin\ApplicationHelper\Controller@postLogin']);
-                Route::post('/auth/token',['as' => 'ah::token_login','uses' => 'Amuz\XePlugin\ApplicationHelper\Controller@tokenLogin']);
-
-                Route::get('/auth/user_list',['as' => 'ah::user_list','uses' => 'Amuz\XePlugin\ApplicationHelper\Controller@userList']);
-                Route::get('/auth/user_groups',['as' => 'ah::user_groups','uses' => 'Amuz\XePlugin\ApplicationHelper\Controller@user_groups']);
-
                 //for inApp Browsers
                 Route::get('/ib/user/register/{group_id?}', ['as' => 'ahib::user_register', 'uses' => 'Amuz\XePlugin\ApplicationHelper\InAppBrowsers\RegisterController@getRegister']);
                 Route::post('/ib/user/register/{group_id?}', ['as' => 'ahib::user_register.store', 'uses' => 'Amuz\XePlugin\ApplicationHelper\InAppBrowsers\RegisterController@postRegister']); // for store
@@ -106,12 +101,19 @@ class Plugin extends AbstractPlugin
                 Route::get('/comment/getItem', ['as' => 'ah::get_comment', 'uses' => 'Amuz\XePlugin\ApplicationHelper\BoardApiController@getItem']);
                 Route::get('/banner/getItem', ['as' => 'application_helper.get.banner.item', 'uses' => 'Amuz\XePlugin\ApplicationHelper\Controller@bannerItemData']);
 
-
                 //이것은 마치 나의 필살기
                 Route::any('/syncDocuments', [
                     'as' => 'documents.sync',
                     'uses' => 'Amuz\XePlugin\ApplicationHelper\Controller@syncDocuments'
                 ]);
+
+                //use API Controller
+                Route::post('/auth/login',['as' => 'ah::post_login','uses' => 'Amuz\XePlugin\ApplicationHelper\Controller@postLogin']);
+                Route::post('/auth/token',['as' => 'ah::token_login','uses' => 'Amuz\XePlugin\ApplicationHelper\Controller@tokenLogin']);
+                Route::any('/auth/social/{provider}',['as' => 'ah::social_login','uses' => 'Amuz\XePlugin\ApplicationHelper\Controller@socialLogin']);
+
+                Route::get('/auth/user_list',['as' => 'ah::user_list','uses' => 'Amuz\XePlugin\ApplicationHelper\Controller@userList']);
+                Route::get('/auth/user_groups',['as' => 'ah::user_groups','uses' => 'Amuz\XePlugin\ApplicationHelper\Controller@user_groups']);
         });
     }
 

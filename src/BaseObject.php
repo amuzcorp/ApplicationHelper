@@ -34,7 +34,7 @@ class BaseObject{
         }
     }
 
-    public function output(){
+    public function output($returnData = false){
         $data = [
             'errors' => $this->errors,
             'message' => $this->message,
@@ -42,7 +42,7 @@ class BaseObject{
         ];
 
         if(count($data['errors']) < 1) unset($data['errors']);
-        return response()->json($data);
+        return ($returnData) ? $data : response()->json($data);
     }
 
 }
