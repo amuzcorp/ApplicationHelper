@@ -68,8 +68,8 @@ class RegisterController extends XeRegisterController
         }else{
             $request->session()->put('select_group_id', $request->get('select_group_id'));
         }
-        return redirect()->route('ahib::user_register', $request->except('_token'));
-//        return $this->userTypesGetRegister($request);
+//        return redirect()->route('ahib::user_register', $request->except('_token'));
+        return $this->userTypesGetRegister($request);
     }
 
     /**
@@ -78,7 +78,7 @@ class RegisterController extends XeRegisterController
      * @param Request $request request
      * @return \Xpressengine\Presenter\Presentable
      */
-    public function userTypesGetRegister(Request $request)
+    public function userTypesGetRegister(Request $request, $group_id = null)
     {
         // 회원 가입 허용 검사
         if (!$this->checkJoinable()) {
@@ -196,7 +196,9 @@ class RegisterController extends XeRegisterController
         $pluginHandler = app('xe.plugin');
         $userTypes = $pluginHandler->getPlugin('user_types');
 
-        return \XePresenter::make('register.create', compact('config', 'parts', 'userTypes'));
+        $userGroup = $request->select_group_id;
+
+        return \XePresenter::make('register.create', compact('config', 'parts', 'userTypes', 'userGroup'));
     }
 
 
