@@ -198,7 +198,9 @@ class RegisterController extends XeRegisterController
         $pluginHandler = app('xe.plugin');
         $userTypes = $pluginHandler->getPlugin('user_types');
 
-        return \XePresenter::make('register.create', compact('config', 'parts', 'userTypes'));
+        $userGroup = $request->select_group_id;
+
+        return \XePresenter::make('register.create', compact('config', 'parts', 'userTypes', 'userGroup'));
     }
 
 
