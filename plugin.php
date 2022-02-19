@@ -82,6 +82,8 @@ class Plugin extends AbstractPlugin
                 //for inApp Browsers
                 Route::get('/ib/user/register/{group_id?}', ['as' => 'ahib::user_register', 'uses' => 'Amuz\XePlugin\ApplicationHelper\InAppBrowsers\RegisterController@getRegister']);
                 Route::post('/ib/user/register/{group_id?}', ['as' => 'ahib::user_register.store', 'uses' => 'Amuz\XePlugin\ApplicationHelper\InAppBrowsers\RegisterController@postRegister']); // for store
+                Route::post('/ib/user/group_select', ['as' => 'ahib::post_group_select', 'uses' => 'Amuz\XePlugin\ApplicationHelper\InAppBrowsers\RegisterController@postGroupSelect']); // for store
+
 
                 Route::get('/ib/board/{instance_id}', ['as' => 'ahib::board', 'uses' => 'Amuz\XePlugin\ApplicationHelper\InAppBrowsers\BoardController@index']);
                 Route::get('/ib/board/{instance_id}/create', ['as' => 'ahib::board_create', 'uses' => 'Amuz\XePlugin\ApplicationHelper\InAppBrowsers\BoardController@create']);

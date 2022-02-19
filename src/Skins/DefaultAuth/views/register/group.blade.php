@@ -9,7 +9,7 @@
     <h2 class="user__title">회원 유형 선택</h2>
     <p class="user__text">가입 할 회원 유형을 선택해주세요.</p>
 
-    <form id="group_form" action="{{ route('auth.register.group_select') }}" method="post" data-rule="join" data-rule-alert-type="form">
+    <form id="group_form" action="{{ route('ahib::post_group_select') }}" method="post" data-rule="join" data-rule-alert-type="form">
         <input type="hidden" name="select_group_id" value="" />
         {{ csrf_field() }}
         <fieldset>
