@@ -16,6 +16,7 @@ use Xpressengine\User\Models\User;
 use Xpressengine\User\Parts\AgreementPart;
 use Xpressengine\User\Parts\DefaultPart;
 use Xpressengine\User\Parts\RegisterFormPart;
+use Xpressengine\User\UserInterface;
 use Xpressengine\User\UserRegisterHandler;
 use RuntimeException;
 
@@ -378,6 +379,91 @@ class RegisterController extends XeRegisterController
         }
 
         return redirect()->intended(($this->redirectPath()));
+    }
+
+
+    /**
+     * Register user
+     *
+     * @param array $userData Register user data
+     *
+     * @return UserInterface
+     */
+    public function registerUser($userData)
+    {
+        $user = app('xe.user');
+        $cfg = app('xe.config');
+        $config = app('xe.config')->get('user.register');
+
+        $email = array_get($userData, 'email', null);
+        $accountId = array_get($userData, 'account_id', null);
+        $providerName = array_get($userData, 'provider_name', null);
+
+        if ($user->users()->where('email', $email)->exists() === true) {
+            throw new RuntimeException;
+        }
+
+        if ($this->findAccount($accountId, $providerName) !== null) {
+            throw new RuntimeException;
+        }
+
+        $userAccountData = [
+            'email' => array_get($userData, 'email', null),
+            'account_id' => $accountId,
+            'provider' => $providerName,
+            'token' => array_get($userData, 'token', null),
+            'token_secret' => array_get($userData, 'token_secret', null) ?? ''
+        ];
+
+        $loginId = array_get($userData, 'login_id', strtok($email, '@'));
+        $userData['login_id'] = $this->resolveLoginId($loginId);
+        $userData['display_name'] = array_get($userData, 'display_name', null);
+
+        // set join group
+        $joinGroup = $config->get('joinGroup');
+        if ($joinGroup !== null) {
+            $userData['group_id'] = [$joinGroup];
+        }
+
+        // 그룹이 2개 이상일때는 선택 한 그룹으로
+        if($userData['select_group_id'] != null) {
+            $userData['group_id'] = [$userData['select_group_id']];
+        }
+
+//        $userData['group_id'] = array_filter([$cfg->getVal('user.register.joinGroup')]);
+
+        $userData['account'] = $userAccountData;
+
+        if ($cfg->getVal('user.register.register_process') === User::STATUS_PENDING_EMAIL) {
+            $userData['status'] = User::STATUS_ACTIVATED;
+            if ($email !== array_get($userData, 'contract_email', null)) {
+                $userData['status'] = User::STATUS_PENDING_EMAIL;
+            }
+        }
+
+        return $user->create($userData);
+    }
+
+    /**
+     * Resolve loginId
+     *
+     * @param string $loginId loginId
+     *
+     * @return string
+     */
+    private function resolveLoginId($loginId)
+    {
+        $i = 1;
+
+        $resolveLoginId = $loginId;
+        while (true) {
+            if (app('xe.user')->users()->where('login_id', $resolveLoginId)->exists() === false) {
+                break;
+            }
+            $resolveLoginId .= $i;
+        }
+
+        return $resolveLoginId;
     }
 
     /**
