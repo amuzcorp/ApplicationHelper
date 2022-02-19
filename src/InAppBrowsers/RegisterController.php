@@ -344,7 +344,7 @@ class RegisterController extends XeRegisterController
         }
 
         // login
-        return redirect()->to(route('ah::closer',$request->all()));
+        return true;
     }
 
     protected function getRegisterParts(Request $request)
@@ -475,6 +475,21 @@ class RegisterController extends XeRegisterController
         return $resolveLoginId;
     }
 
+    /**
+     * 회원가입 인증 메일 발송
+     *
+     * @param UserInterface $user userItem
+     *
+     * @return void
+     */
+    protected function sendApproveEmail(UserInterface $user)
+    {
+        $tokenRepository = app('xe.user.register.tokens');
+
+        $mail = $this->handler->createEmail($user, ['address' => $user->email], false);
+        $token = $tokenRepository->create('register', ['email' => $user->email, 'user_id' => $user->id]);
+        $this->emailBroker->sendEmailForRegisterApprove($mail, $token);
+    }
 
     /**
      * throw http exception
