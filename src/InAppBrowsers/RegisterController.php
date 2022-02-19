@@ -157,19 +157,11 @@ class RegisterController extends XeRegisterController
     {
         $config = app('xe.config')->get('user.register');
 
-        $userHandler = app('xe.user');
+        $select_group_id = $request->select_group_id;
 
         // 활성화된 가입폼 가져오기
-        $parts = $userHandler->getRegisterParts();
-        $activated = array_keys(array_intersect_key(array_flip($config->get('forms', [])), $parts));
-
-        $parts = collect($parts)->filter(function ($part, $key) use ($activated) {
-            return in_array($key, $activated) || $part::isImplicit();
-        })->sortBy(function ($part, $key) use ($activated) {
-            return array_search($key, $activated);
-        })->map(function ($part) use ($request) {
-            return new $part($request);
-        });
+        $parts = $this->getRegisterParts($request);
+        $parts['amuz-default-info']->setGroupId($select_group_id);
 
         $rules = $parts->map(function ($part) {
             return $part->rules();
@@ -193,14 +185,39 @@ class RegisterController extends XeRegisterController
         expose_trans('xe::passwordIncludeCharacter');
         expose_trans('xe::passwordIncludeSpecialCharacter');
 
-        $pluginHandler = app('xe.plugin');
-        $userTypes = $pluginHandler->getPlugin('user_types');
+        $userContract = $request->session()->get('userContract');
+        if($userContract) {
+            $isEmailDuplicated = app('xe.user')->users()->where('email', $userContract->getEmail())->exists();
+        } else {
+            $isEmailDuplicated = false;
+        }
+        $providerName = $request->session()->get('provider');
 
-        $userGroup = $request->select_group_id;
-
-        return \XePresenter::make('register.create', compact('config', 'parts', 'userTypes', 'userGroup'));
+        return \XePresenter::make('register.create',
+            compact(
+                'config', 'parts', 'groupConfig', 'select_group_id', 'userContract', 'providerName', 'isEmailDuplicated'
+            )
+        );
     }
 
+
+    protected function getRegisterParts(Request $request)
+    {
+        $config = app('xe.config')->get('user.register');
+
+        $parts = $this->handler->getRegisterParts();
+        $activated = array_keys(array_intersect_key(array_flip($config->get('forms', [])), $parts));
+
+        $parts = collect($parts)->filter(function ($part, $key) use ($activated) {
+            return in_array($key, $activated) || $part::isImplicit();
+        })->sortBy(function ($part, $key) use ($activated) {
+            return array_search($key, $activated);
+        })->map(function ($part) use ($request) {
+            return new $part($request);
+        });
+
+        return $parts;
+    }
 
     /**
      * Indicate able to join
