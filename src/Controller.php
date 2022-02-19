@@ -386,7 +386,7 @@ class Controller extends BaseController
         $request->session()->put('userContract', $userContract);
         $request->session()->put('provider', $provider);
 
-        return redirect()->route('social_login::get_register_form');
+        return redirect()->route('ahib::user_register');
     }
 
     protected function checkDeviceConnect(Request $request){
