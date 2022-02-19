@@ -7,9 +7,10 @@
 <div class="user user--signup">
     <h2 class="user__title">{{ xe_trans('xe::signUp') }}</h2>
     <p class="user__text">{!! nl2br($config->get('register_guide')) !!}</p>
-{{$userGroup}}
+
     <form action="{{ route('ahib::user_register.store') }}" method="post" data-rule="join" data-rule-alert-type="form">
         {{ csrf_field() }}
+        <input type="hidden" name="select_group_id" value="{{ $select_group_id }}" />
         <fieldset>
             <legend>{{ xe_trans('xe::signUp') }}</legend>
 
