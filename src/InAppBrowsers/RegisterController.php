@@ -78,7 +78,7 @@ class RegisterController extends XeRegisterController
      * @param Request $request request
      * @return \Xpressengine\Presenter\Presentable
      */
-    public function userTypesGetRegister(Request $request, $group_id = null)
+    public function userTypesGetRegister(Request $request)
     {
         // 회원 가입 허용 검사
         if (!$this->checkJoinable()) {
@@ -93,12 +93,8 @@ class RegisterController extends XeRegisterController
         // 1. 선택된 그룹이 2개 이상인지.
         if(count($groups) > 1) {
             // 2. 그룹 ID 선택 안되어있으면 그룹선택 화면으로
-            if (!isset($request->select_group_id) && $group_id == null) {
+            if (!isset($request->select_group_id)) {
                 return \XePresenter::make('register.group', compact('groups'));
-            } elseif(isset($request->select_group_id) && $group_id == null) {
-                $group_id = $request->select_group_id;
-            } elseif($request->select_group_id !== $group_id) {
-                $group_id = $request->select_group_id;
             }
         }
 
@@ -114,7 +110,8 @@ class RegisterController extends XeRegisterController
 
         if(count($groups) > 1) {
             // 선택된 그룹에 매칭된 약관 id 를 가져온다
-            dd($request->select_group_id, $group_id);
+            $group_id = $request->select_group_id;
+            dd($group_id);
             $group_config = app('amuz.usertype.config')->get($group_id);
             $selected_terms = $group_config->get('selected_terms') ? $group_config->get('selected_terms') : [];
 
