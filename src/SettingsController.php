@@ -191,12 +191,16 @@ class SettingsController extends BaseController
 
         $main_banner = $app_config->get('banner_list');
         foreach($main_banner as $key => $banner_item) {
-            $main_banner[$key] = $this->setBannerOptions($banner_item);
+            $item = $this->setBannerOptions($banner_item);
+            if($item !== null) $main_banner[$key] = $item;
+            else unset($main_banner[$key]);
         }
 
         $content_banner = $app_config->get('content_banner_list');
         foreach($content_banner as $key => $banner_item) {
-            $content_banner[$key] = $this->setBannerOptions($banner_item);
+            $item = $this->setBannerOptions($banner_item);
+            if($item !== null) $content_banner[$key] = $item;
+            else unset($content_banner[$key]);
         }
 
         app('xe.config')->set('application_helper.app_config', [
@@ -222,6 +226,8 @@ class SettingsController extends BaseController
     public function setBannerOptions($item) {
         $bannerHandler = app('xe.banner');
         $banner = $bannerHandler->getItem($item['id']);
+
+        if(!$banner) return null;
 
         $item['id'] = $banner->id;
         $item['group_id'] = $banner->group_id;
