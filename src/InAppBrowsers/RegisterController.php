@@ -69,7 +69,7 @@ class RegisterController extends XeRegisterController
         if (!$user_types || $user_types->getStatus() != 'activated') {
             parent::postRegister($request);
         } else {
-            return $this->userTypesPostRegister($request);
+            $this->userTypesPostRegister($request);
         }
         return redirect()->to(route('ah::closer',$request->all()));
     }
@@ -354,10 +354,10 @@ class RegisterController extends XeRegisterController
 
         // login
         if (app('config')->get('xe.user.registrationAutoLogin') === true) {
-            $this->auth->login($user);
+            app('auth')->login($user);
         }
-
-        return redirect()->to(route('ah::closer',$request->all()));
+        dd(1);
+        return true;
     }
 
     protected function getRegisterParts(Request $request)
