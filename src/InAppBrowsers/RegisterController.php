@@ -3,12 +3,21 @@ namespace Amuz\XePlugin\ApplicationHelper\InAppBrowsers;
 
 use App\Http\Controllers\Auth\RegisterController as XeRegisterController;
 use Amuz\XePlugin\UserTypes\Controllers\RegisterController as UserTypesRegisterController;
+use Exception;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
 use XePresenter;
 use XeFrontend;
 use XeTheme;
 use XeConfig;
+use XeDB;
+use Xpressengine\Support\Exceptions\HttpXpressengineException;
+use Xpressengine\User\Models\User;
+use Xpressengine\User\Parts\AgreementPart;
+use Xpressengine\User\Parts\DefaultPart;
+use Xpressengine\User\Parts\RegisterFormPart;
 use Xpressengine\User\UserRegisterHandler;
+use RuntimeException;
 
 /**
  * Class RegisterController
@@ -56,7 +65,7 @@ class RegisterController extends XeRegisterController
         if (!$user_types || $user_types->getStatus() != 'activated') {
             parent::postRegister($request);
         } else {
-
+            $this->userTypesPostRegister($request);
         }
         return redirect()->to(route('ah::closer',$request->all()));
     }
@@ -230,4 +239,162 @@ class RegisterController extends XeRegisterController
         return XeConfig::getVal('user.register.joinable') === true;
     }
 
+    public function userTypesPostRegister($request)
+    {
+        // validation
+        if (!$this->checkJoinable()) {
+            return redirect()->back()->with(
+                ['alert' => ['type' => 'danger', 'message' => xe_trans('xe::joinNotAllowed')]]
+            );
+        }
+
+        $config = app('xe.config')->get('user.register');
+
+        $socialLogin = $request->get('social_login') ?: 'N';
+
+        // 활성화된 가입폼 가져오기
+        $parts = $this->getRegisterParts($request);
+        if($socialLogin === 'Y') {
+            $parts->each(function (RegisterFormPart $part) use ($request) {
+                if ($part::ID === DefaultPart::ID) {
+                    $rule = $part->rules();
+                    unset($rule['password']);
+
+                    $this->validate($request, $rule);
+                }
+                elseif ($part::ID === AgreementPart::ID) {
+                    $requireTerms = app('xe.terms')->fetchRequireEnabled();
+                    $termAgreeType = app('xe.config')->getVal('user.register.term_agree_type');
+
+                    if ($requireTerms->count() > 0 && $termAgreeType !== UserRegisterHandler::TERM_AGREE_NOT) {
+                        $requireTermValidator = Validator::make(
+                            $request->all(),
+                            [],
+                            ['user_agree_terms.accepted' => xe_trans('xe::pleaseAcceptRequireTerms')]
+                        );
+
+                        $requireTermValidator->sometimes(
+                            'user_agree_terms',
+                            'accepted',
+                            function ($input) use ($requireTerms) {
+                                $userAgreeTerms = $input['user_agree_terms'] ?? [];
+
+                                foreach ($requireTerms as $requireTerm) {
+                                    if (in_array($requireTerm->id, $userAgreeTerms) === false) {
+                                        return true;
+                                    }
+                                }
+
+                                return false;
+                            }
+                        )->validate();
+                    }
+                }
+                else {
+                    $part->validate();
+                }
+            });
+
+            XeDB::beginTransaction();
+            try {
+                $userData = $request->except(['_token']);
+                $user = $this->registerUser($userData);
+                $request->session()->forget(['userContract', 'provider']);
+                $userData['id'] = $user->id;    // 생성된 user id
+                app('amuz.usertype.handler')->insertDf($userData);  // 회원 그룹별 확장 필드 저장
+            } catch (RuntimeException $e) {
+                XeDB::rollback();
+                $this->throwHttpException(xe_trans('user_types::alreadyRegisteredAccount'), 409, $e);
+            } catch (RuntimeException $e) {
+                XeDB::rollback();
+                $this->throwHttpException(xe_trans('user_types::alreadyRegisteredEmail'), 409, $e);
+            } catch (\Throwable $e) {
+                XeDB::rollback();
+                throw $e;
+            }
+            XeDB::commit();
+
+        } else {
+            $parts->each(function ($part) {
+                $part->validate();
+            });
+
+            $userData = $request->except(['_token']);
+
+            // set join group
+            $joinGroup = $config->get('joinGroup');
+            if ($joinGroup !== null) {
+                $userData['group_id'] = [$joinGroup];
+            }
+
+            // 그룹이 2개 이상일때는 선택 한 그룹으로
+            if($request->get('select_group_id') != null) {
+                $userData['group_id'] = [$request->get('select_group_id')];
+            }
+
+            if ($request->session()->has('user_agree_terms') === true) {
+                $userData['user_agree_terms'] = $request->session()->pull('user_agree_terms');
+            } elseif ($request->has('agree') === true) {
+                $enableTermIds = [];
+                $enableTerms = $this->termsHandler->fetchEnabled();
+                foreach ($enableTerms as $term) {
+                    $enableTermIds[] = $term->id;
+                }
+
+                $userData['user_agree_terms'] = $enableTermIds;
+            }
+
+            XeDB::beginTransaction();
+            try {
+                $user = $this->handler->create($userData);
+                $userData['id'] = $user->id;    // 생성된 user id
+                app('amuz.usertype.handler')->insertDf($userData);  // 회원 그룹별 확장 필드 저장
+            } catch (\Exception $e) {
+                XeDB::rollback();
+                throw $e;
+            }
+            XeDB::commit();
+
+        }
+
+        //이메일 인증 후 가입 옵션을 사용 했을 때 회원가입 후 인증 메일 발송
+        if ($user->status === User::STATUS_PENDING_EMAIL) {
+            $this->sendApproveEmail($user);
+        }
+
+        // login
+        if (app('config')->get('xe.user.registrationAutoLogin') === true) {
+            $this->auth->login($user);
+
+            switch ($user->status) {
+                case User::STATUS_PENDING_ADMIN:
+                    return redirect()->route('auth.pending_admin');
+                    break;
+
+                case User::STATUS_PENDING_EMAIL:
+                    return redirect()->route('auth.pending_email');
+                    break;
+            }
+        }
+
+        return redirect()->intended(($this->redirectPath()));
+    }
+
+    /**
+     * throw http exception
+     *
+     * @param string $msg      massage
+     * @param null   $code     code
+     * @param null   $previous previous
+     *
+     * @return void
+     * @throws HttpXpressengineException
+     */
+    protected function throwHttpException($msg, $code = null, $previous = null)
+    {
+        $e = new HttpXpressengineException([], $code, $previous);
+        $e->setMessage($msg);
+
+        throw $e;
+    }
 }
