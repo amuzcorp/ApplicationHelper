@@ -8,7 +8,7 @@
     <h2 class="user__title">{{ xe_trans('xe::signUp') }}</h2>
     <p class="user__text">{!! nl2br($config->get('register_guide')) !!}</p>
 
-    @if($userTypesPlugin === true)
+    @if($userContract)
         <form action="{{ route('auth.register') }}" method="post" data-rule="join" data-rule-alert-type="form">
     @else
         <form action="{{ route('ahib::user_register.store') }}" method="post" data-rule="join" data-rule-alert-type="form">
