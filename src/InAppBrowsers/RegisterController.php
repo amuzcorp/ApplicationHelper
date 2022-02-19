@@ -62,10 +62,16 @@ class RegisterController extends XeRegisterController
         }else{
             $request->session()->put('select_group_id', $request->get('select_group_id'));
         }
-        return $this->userTypesGetRegister($request->except('_token'));
+        return $this->userTypesGetRegister($request);
     }
 
-    public function userTypesGetRegister($request, $group_id = null)
+    /**
+     * Show the application registration form.
+     *
+     * @param Request $request request
+     * @return \Xpressengine\Presenter\Presentable
+     */
+    public function userTypesGetRegister(Request $request, $group_id = null)
     {
         // 회원 가입 허용 검사
         if (!$this->checkJoinable()) {
