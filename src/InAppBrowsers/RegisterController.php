@@ -344,6 +344,21 @@ class RegisterController extends XeRegisterController
         }
 
         // login
+        if (app('config')->get('xe.user.registrationAutoLogin') === true) {
+            $this->auth->login($user);
+
+            switch ($user->status) {
+                case User::STATUS_PENDING_ADMIN:
+                    return redirect()->route('auth.pending_admin');
+                    break;
+
+                case User::STATUS_PENDING_EMAIL:
+                    return redirect()->route('auth.pending_email');
+                    break;
+            }
+        }
+
+        // login
         return true;
     }
 
