@@ -110,6 +110,7 @@ class RegisterController extends XeRegisterController
 
         if(count($groups) > 1) {
             // 선택된 그룹에 매칭된 약관 id 를 가져온다
+            $group_id = $request->select_group_id;
             $group_config = app('amuz.usertype.config')->get($group_id);
             $selected_terms = $group_config->get('selected_terms') ? $group_config->get('selected_terms') : [];
 
