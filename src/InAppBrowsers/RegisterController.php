@@ -51,7 +51,13 @@ class RegisterController extends XeRegisterController
     }
 
     public function postRegister(Request $request){
-        parent::postRegister($request);
+        $pluginHandler = app('xe.plugin');
+        $user_types = $pluginHandler->getPlugin('user_types');
+        if (!$user_types || $user_types->getStatus() != 'activated') {
+            parent::postRegister($request);
+        } else {
+
+        }
         return redirect()->to(route('ah::closer',$request->all()));
     }
 
