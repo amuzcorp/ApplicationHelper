@@ -158,6 +158,7 @@ class RegisterController extends XeRegisterController
         $config = app('xe.config')->get('user.register');
 
         $select_group_id = $request->select_group_id;
+        $groupConfig = app('amuz.usertype.config')->get($select_group_id);
 
         // 활성화된 가입폼 가져오기
         $parts = $this->getRegisterParts($request);
