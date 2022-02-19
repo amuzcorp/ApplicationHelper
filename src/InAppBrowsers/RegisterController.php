@@ -1,6 +1,9 @@
 <?php
 namespace Amuz\XePlugin\ApplicationHelper\InAppBrowsers;
 
+use Amuz\XePlugin\UserTypes\Contracts\User as UserContract;
+use Amuz\XePlugin\UserTypes\Exceptions\ExistsAccountException;
+use Amuz\XePlugin\UserTypes\Exceptions\ExistsEmailException;
 use App\Http\Controllers\Auth\RegisterController as XeRegisterController;
 use Amuz\XePlugin\UserTypes\Controllers\RegisterController as UserTypesRegisterController;
 use Exception;
@@ -61,7 +64,13 @@ class RegisterController extends XeRegisterController
     }
 
     public function postRegister(Request $request){
-        parent::postRegister($request);
+        $pluginHandler = app('xe.plugin');
+        $user_types = $pluginHandler->getPlugin('user_types');
+        if (!$user_types || $user_types->getStatus() != 'activated') {
+            parent::postRegister($request);
+        } else {
+            return $this->userTypesPostRegister($request);
+        }
         return redirect()->to(route('ah::closer',$request->all()));
     }
 
@@ -213,6 +222,144 @@ class RegisterController extends XeRegisterController
     }
 
 
+    /**
+     * Handle a registration request for the application.
+     *
+     * @param \Illuminate\Http\Request $request request
+     * @return \Illuminate\Http\RedirectResponse
+     * @throws Exception
+     * @throws \Throwable
+     */
+    public function userTypesPostRegister(Request $request)
+    {
+        // validation
+        if (!$this->checkJoinable()) {
+            return redirect()->back()->with(
+                ['alert' => ['type' => 'danger', 'message' => xe_trans('xe::joinNotAllowed')]]
+            );
+        }
+
+        $config = app('xe.config')->get('user.register');
+
+        $socialLogin = $request->get('social_login') ?: 'N';
+
+        // 활성화된 가입폼 가져오기
+
+        $userData = $request->except(['_token']);
+
+        // set join group
+        $joinGroup = $config->get('joinGroup');
+        if ($joinGroup !== null) {
+            $userData['group_id'] = [$joinGroup];
+        }
+
+        // 그룹이 2개 이상일때는 선택 한 그룹으로
+        if($request->get('select_group_id') != null) {
+            $userData['group_id'] = [$request->get('select_group_id')];
+        }
+
+        if ($request->session()->has('user_agree_terms') === true) {
+            $userData['user_agree_terms'] = $request->session()->pull('user_agree_terms');
+        } elseif ($request->has('agree') === true) {
+            $enableTermIds = [];
+            $enableTerms = $this->termsHandler->fetchEnabled();
+            foreach ($enableTerms as $term) {
+                $enableTermIds[] = $term->id;
+            }
+
+            $userData['user_agree_terms'] = $enableTermIds;
+        }
+
+        $parts = $this->getRegisterParts($request);
+        if($socialLogin === 'Y') {
+            $parts->each(function (RegisterFormPart $part) use ($request) {
+                if ($part::ID === DefaultPart::ID) {
+                    $rule = $part->rules();
+                    unset($rule['password']);
+
+                    $this->validate($request, $rule);
+                }
+                elseif ($part::ID === AgreementPart::ID) {
+                    $requireTerms = app('xe.terms')->fetchRequireEnabled();
+                    $termAgreeType = app('xe.config')->getVal('user.register.term_agree_type');
+
+                    if ($requireTerms->count() > 0 && $termAgreeType !== UserRegisterHandler::TERM_AGREE_NOT) {
+                        $requireTermValidator = Validator::make(
+                            $request->all(),
+                            [],
+                            ['user_agree_terms.accepted' => xe_trans('xe::pleaseAcceptRequireTerms')]
+                        );
+
+                        $requireTermValidator->sometimes(
+                            'user_agree_terms',
+                            'accepted',
+                            function ($input) use ($requireTerms) {
+                                $userAgreeTerms = $input['user_agree_terms'] ?? [];
+
+                                foreach ($requireTerms as $requireTerm) {
+                                    if (in_array($requireTerm->id, $userAgreeTerms) === false) {
+                                        return true;
+                                    }
+                                }
+
+                                return false;
+                            }
+                        )->validate();
+                    }
+                }
+                else {
+                    $part->validate();
+                }
+            });
+
+            XeDB::beginTransaction();
+            try {
+                $user = $this->registerUser($request->except(['_token']));
+                $userData['id'] = $user->id;    // 생성된 user id
+                app('amuz.usertype.handler')->insertDf($userData);  // 회원 그룹별 확장 필드 저장
+            } catch (ExistsAccountException $e) {
+                XeDB::rollback();
+                $this->throwHttpException(xe_trans('user_types::alreadyRegisteredAccount'), 409, $e);
+            } catch (ExistsEmailException $e) {
+                XeDB::rollback();
+                $this->throwHttpException(xe_trans('user_types::alreadyRegisteredEmail'), 409, $e);
+            } catch (\Throwable $e) {
+                XeDB::rollback();
+                throw $e;
+            }
+            XeDB::commit();
+
+        } else {
+            $parts->each(function ($part) {
+                $part->validate();
+            });
+
+            XeDB::beginTransaction();
+            try {
+                $user = $this->handler->create($userData);
+                $userData['id'] = $user->id;    // 생성된 user id
+                app('amuz.usertype.handler')->insertDf($userData);  // 회원 그룹별 확장 필드 저장
+            } catch (\Exception $e) {
+                XeDB::rollback();
+                throw $e;
+            }
+            XeDB::commit();
+
+        }
+
+        //이메일 인증 후 가입 옵션을 사용 했을 때 회원가입 후 인증 메일 발송
+        if ($user->status === User::STATUS_PENDING_EMAIL) {
+            $this->sendApproveEmail($user);
+        }
+
+        // login
+        if (app('config')->get('xe.user.registrationAutoLogin') === true) {
+            $this->auth->login($user);
+        }
+
+        return redirect()->to(route('ah::closer',$request->all()));
+    }
+
     protected function getRegisterParts(Request $request)
     {
         $config = app('xe.config')->get('user.register');
@@ -229,6 +376,84 @@ class RegisterController extends XeRegisterController
         });
 
         return $parts;
+    }
+
+
+    /**
+     * find account
+     *
+     * @param string $userContractId user info
+     * @param string $providerName   providerName
+     *
+     * @return \Xpressengine\User\Models\UserAccount|null
+     */
+    protected function findAccount($userContractId, $providerName)
+    {
+        if ($userContractId instanceof UserContract) {
+            $userContractId = $userContractId->getId();
+        }
+
+        return app('xe.user')->accounts()
+            ->where(['provider' => $providerName, 'account_id' => $userContractId])
+            ->first();
+    }
+
+    /**
+     * Register user
+     *
+     * @param array $userData Register user data
+     *
+     * @return UserInterface
+     */
+    public function registerUser($userData)
+    {
+        $user = app('xe.user');
+        $cfg = app('xe.config');
+        $config = app('xe.config')->get('user.register');
+
+        $email = array_get($userData, 'email', null);
+        $accountId = array_get($userData, 'account_id', null);
+        $providerName = array_get($userData, 'provider_name', null);
+
+        if ($user->users()->where('email', $email)->exists() === true) {
+            throw new ExistsEmailException;
+        }
+
+        if ($this->findAccount($accountId, $providerName) !== null) {
+            throw new ExistsAccountException;
+        }
+
+        $userAccountData = [
+            'email' => array_get($userData, 'email', null),
+            'account_id' => $accountId,
+            'provider' => $providerName,
+            'token' => array_get($userData, 'token', null),
+            'token_secret' => array_get($userData, 'token_secret', null) ?? ''
+        ];
+
+        $loginId = array_get($userData, 'login_id', strtok($email, '@'));
+        $userData['login_id'] = $this->resolveLoginId($loginId);
+        $userData['display_name'] = array_get($userData, 'display_name', null);
+
+        // set join group
+        $joinGroup = $config->get('joinGroup');
+        if ($joinGroup !== null) {
+            $userData['group_id'] = [$joinGroup];
+        }
+
+        // 그룹이 2개 이상일때는 선택 한 그룹으로
+        if($userData['select_group_id'] != null) {
+            $userData['group_id'] = [$userData['select_group_id']];
+        }
+        $userData['account'] = $userAccountData;
+
+        if ($cfg->getVal('user.register.register_process') === User::STATUS_PENDING_EMAIL) {
+            $userData['status'] = User::STATUS_ACTIVATED;
+            if ($email !== array_get($userData, 'contract_email', null)) {
+                $userData['status'] = User::STATUS_PENDING_EMAIL;
+            }
+        }
+        return $user->create($userData);
     }
 
     /**
