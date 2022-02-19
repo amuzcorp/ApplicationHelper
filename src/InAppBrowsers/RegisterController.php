@@ -221,15 +221,6 @@ class RegisterController extends XeRegisterController
         );
     }
 
-
-    /**
-     * Handle a registration request for the application.
-     *
-     * @param \Illuminate\Http\Request $request request
-     * @return \Illuminate\Http\RedirectResponse
-     * @throws Exception
-     * @throws \Throwable
-     */
     public function userTypesPostRegister(Request $request)
     {
         // validation
@@ -353,11 +344,7 @@ class RegisterController extends XeRegisterController
         }
 
         // login
-        if (app('config')->get('xe.user.registrationAutoLogin') === true) {
-            app('auth')->login($user);
-        }
-        dd(1);
-        return true;
+        return redirect()->to(route('ah::closer',$request->all()));
     }
 
     protected function getRegisterParts(Request $request)
