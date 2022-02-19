@@ -189,14 +189,16 @@ class SettingsController extends BaseController
 
         $app_config = app('xe.config')->get('application_helper.app_config');
 
-        $main_banner = $app_config->get('banner_list');
-        foreach($main_banner as $key => $banner_item) {
+        $main_banner_list = $app_config->get('banner_list');
+        $main_banner = [];
+        foreach($main_banner_list as $key => $banner_item) {
             $item = $this->setBannerOptions($banner_item);
             if($item !== null) $main_banner[$key] = $item;
         }
 
-        $content_banner = $app_config->get('content_banner_list');
-        foreach($content_banner as $key => $banner_item) {
+        $content_banner_list = $app_config->get('content_banner_list');
+        $content_banner = [];
+        foreach($content_banner_list as $key => $banner_item) {
             $item = $this->setBannerOptions($banner_item);
             if($item !== null) $content_banner[$key] = $item;
         }
