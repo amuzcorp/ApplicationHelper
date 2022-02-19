@@ -467,6 +467,29 @@ class RegisterController extends XeRegisterController
     }
 
     /**
+     * Resolve loginId
+     *
+     * @param string $loginId loginId
+     *
+     * @return string
+     */
+    private function resolveLoginId($loginId)
+    {
+        $i = 1;
+
+        $resolveLoginId = $loginId;
+        while (true) {
+            if (app('xe.user')->users()->where('login_id', $resolveLoginId)->exists() === false) {
+                break;
+            }
+            $resolveLoginId .= $i;
+        }
+
+        return $resolveLoginId;
+    }
+
+
+    /**
      * throw http exception
      *
      * @param string $msg      massage
