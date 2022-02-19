@@ -225,6 +225,8 @@ class SettingsController extends BaseController
         $bannerHandler = app('xe.banner');
         $banner = $bannerHandler->getItem($item['id']);
 
+        if(!$banner) return null;
+
         $item['id'] = $banner->id;
         $item['group_id'] = $banner->group_id;
         $item['title'] = $banner->title;
