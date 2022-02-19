@@ -189,7 +189,10 @@ class RegisterController extends XeRegisterController
         expose_trans('xe::passwordIncludeCharacter');
         expose_trans('xe::passwordIncludeSpecialCharacter');
 
-        return \XePresenter::make('register.create', compact('config', 'parts'));
+        $pluginHandler = app('xe.plugin');
+        $userTypes = $pluginHandler->getPlugin('user_types');
+
+        return \XePresenter::make('register.create', compact('config', 'parts', 'userTypes'));
     }
 
 

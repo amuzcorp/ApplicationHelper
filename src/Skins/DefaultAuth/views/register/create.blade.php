@@ -7,7 +7,7 @@
 <div class="user user--signup">
     <h2 class="user__title">{{ xe_trans('xe::signUp') }}</h2>
     <p class="user__text">{!! nl2br($config->get('register_guide')) !!}</p>
-
+{{dd($userTypes, $parts)}}
     <form action="{{ route('ahib::user_register.store') }}" method="post" data-rule="join" data-rule-alert-type="form">
         {{ csrf_field() }}
         <fieldset>
