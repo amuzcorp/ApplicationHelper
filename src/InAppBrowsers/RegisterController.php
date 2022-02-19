@@ -68,7 +68,8 @@ class RegisterController extends XeRegisterController
         }else{
             $request->session()->put('select_group_id', $request->get('select_group_id'));
         }
-        return $this->userTypesGetRegister($request);
+        return redirect()->route('ahib::user_register', $request->except('_token'));
+//        return $this->userTypesGetRegister($request);
     }
 
     /**
