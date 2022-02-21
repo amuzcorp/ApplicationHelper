@@ -331,11 +331,34 @@ class Controller extends BaseController
                     'email'     => $is_email_valid && $is_email_verified ? Arr::get($authedUser, 'kakao_account.email') : null,
                     'avatar'    => Arr::get($authedUser, 'properties.profile_image'),
                 ]);
+                $userContract->setToken(Arr::get($authedToken, 'access_token'))
+                    ->setRefreshToken(Arr::get($authedToken, 'refresh_token'))
+                    ->setExpiresIn(Arr::get($authedToken, 'access_token_expires_at'));
+                break;
+            case "apple" :
+                $providerInstance = $socialite->driver($provider);
+                $providerInstance->stateless();
+
+                if (array_key_exists("name", $authedUser)) {
+                    $user["name"] = $authedUser["name"];
+                    $fullName = trim(
+                        ($user["name"]['firstName'] ?? "")
+                        . " "
+                        . ($user["name"]['lastName'] ?? "")
+                    );
+                }
+
+                $userContract = (new \Laravel\Socialite\Two\User())
+                    ->setRaw($authedUser)
+                    ->map([
+                        "id" => $authedUser["user_id"],
+                        "name" => $fullName ?? null,
+                        "email" => $user["email"] ?? null,
+                    ]);
+
+                $userContract->setToken(Arr::get($authedToken, 'access_token'));
                 break;
         }
-        $userContract->setToken(Arr::get($authedToken, 'access_token'))
-            ->setRefreshToken(Arr::get($authedToken, 'refresh_token'))
-            ->setExpiresIn(Arr::get($authedToken, 'access_token_expires_at'));
 
         if (app('xe.config')->getVal('user.register.joinable') === false) {
             return redirect()->back()->with(
