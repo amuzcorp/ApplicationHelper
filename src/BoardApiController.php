@@ -45,9 +45,16 @@ class BoardApiController extends BaseController
         // 댓글 총 수
         $totalCount = $query->count();
 
+        $index = 0;
         foreach ($comments as $comment) {
             $handler->bindUserVote($comment);
-            $comment->writer_profile = app('xe.user')->users()->where('id', $comment->user_id)->first()->getProfileImage();
+            $user = app('xe.user')->users()->where('id', $comment->user_id)->first();
+            if($user) {
+                $comment->writer_profile = app('xe.user')->users()->where('id', $comment->user_id)->first()->getProfileImage();
+            } else {
+                unset($comments[$index]);
+            }
+            $index++;
         }
 
         return XePresenter::makeApi([
