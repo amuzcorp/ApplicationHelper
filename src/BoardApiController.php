@@ -52,7 +52,7 @@ class BoardApiController extends BaseController
             if($user) {
                 $comment->writer_profile = app('xe.user')->users()->where('id', $comment->user_id)->first()->getProfileImage();
             } else {
-                unset($comments[$index]);
+                $comment->writer_profile = null;
             }
             $index++;
         }
