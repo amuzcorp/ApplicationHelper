@@ -320,6 +320,8 @@ class Controller extends BaseController
         $postData = json_dec($requestPostData,true);
         $retObj->set('provider',$provider);
 
+        dd($postData);
+
         $authedUser = array_get($postData,'user');
         $authedToken = array_get($postData,'token');
 
