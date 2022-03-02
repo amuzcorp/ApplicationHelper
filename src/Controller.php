@@ -315,7 +315,7 @@ class Controller extends BaseController
         $retObj = $this->checkDeviceConnect($request);
 
         $requestPostData = $request->header('postData','[]') ?: '[]';
-        dd($requestPostData, $request->header('postData','[]'));
+
         if($this->isJson($request->header('postData','[]')) === false) $requestPostData = '[]';
 
         $postData = json_dec($requestPostData,true);
