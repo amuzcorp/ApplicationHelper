@@ -317,6 +317,8 @@ class Controller extends BaseController
         $requestPostData = $request->header('postData','[]') ?: '[]';
         if($this->isJson($request->header('postData','[]')) === false) $requestPostData = '[]';
 
+        dd($request->header('postData','[]'), $requestPostData);
+
         $postData = json_dec($requestPostData,true);
         $retObj->set('provider',$provider);
 
