@@ -320,8 +320,8 @@ class Controller extends BaseController
         $postData = json_dec($requestPostData,true);
         $retObj->set('provider',$provider);
 
-        $authedUser = json_dec(array_get($postData,'user'),true);
-        $authedToken = json_dec(array_get($postData,'token'),true);
+        $authedUser = array_get($postData,'user');
+        $authedToken = array_get($postData,'token');
 
         switch($provider){
             case "kakao" :
