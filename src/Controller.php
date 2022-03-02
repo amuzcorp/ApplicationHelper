@@ -314,15 +314,11 @@ class Controller extends BaseController
     public function socialLogin(Request $request,Handler $socialLoginHandler,Socialite $socialite, $provider){
         $retObj = $this->checkDeviceConnect($request);
 
-        dd($request->header('postData','[]'));
-
         $requestPostData = $request->header('postData','[]') ?: '[]';
         if($this->isJson($request->header('postData','[]')) === false) $requestPostData = '[]';
 
         $postData = json_dec($requestPostData,true);
         $retObj->set('provider',$provider);
-
-        dd($postData);
 
         $authedUser = array_get($postData,'user');
         $authedToken = array_get($postData,'token');
