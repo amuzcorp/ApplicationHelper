@@ -313,16 +313,11 @@ class Controller extends BaseController
 
     public function socialLogin(Request $request,Handler $socialLoginHandler,Socialite $socialite, $provider){
         $retObj = $this->checkDeviceConnect($request);
-
-        $requestPostData = $request->header('postData','[]') ?: '[]';
-
-        if($this->isJson($request->header('postData','[]')) === false) $requestPostData = '[]';
-
-        $postData = json_dec($requestPostData,true);
+        $postData = json_dec($request->header('postData','[]'),true);
         $retObj->set('provider',$provider);
 
-        $authedUser = array_get($postData,'user');
-        $authedToken = array_get($postData,'token');
+        $authedUser = json_dec(array_get($postData,'user'),true);
+        $authedToken = json_dec(array_get($postData,'token'),true);
 
         switch($provider){
             case "kakao" :
@@ -742,7 +737,6 @@ class Controller extends BaseController
 
         throw $e;
     }
-
     public function isJson($string) {
         return ((is_string($string) &&
             (is_object(json_decode($string)) ||
