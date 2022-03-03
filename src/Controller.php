@@ -313,6 +313,7 @@ class Controller extends BaseController
 
     public function socialLogin(Request $request,Handler $socialLoginHandler,Socialite $socialite, $provider){
         $retObj = $this->checkDeviceConnect($request);
+        dd($request->header('postData','[]'));
         $postData = json_dec($request->header('postData','[]'),true);
         $retObj->set('provider',$provider);
 
