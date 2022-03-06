@@ -71,7 +71,7 @@ class RegisterController extends XeRegisterController
         } else {
             $this->userTypesPostRegister($request);
         }
-        return redirect()->to(route('ah::closer',$request->all()));
+        return redirect()->to(route('ah::closer',['isRegistered' => true]));
     }
 
     public function postGroupSelect(Request $request)

@@ -546,7 +546,7 @@ class Controller extends BaseController
         $query = XeUser::where('status', 'activated');
 
         //그룹찾기
-        if($userGroupId !== '') {
+        if($userGroupId !== '' && $userGroupId != 'user') {
             $query->whereHas('groups', function($q) use ($userGroupId){
                 $q->where('group_id',$userGroupId);
             });
@@ -561,19 +561,24 @@ class Controller extends BaseController
                 'field_id' => $request->get('near_target'),
                 'lat' => $request->get('lat'),
                 'lng' => $request->get('lng'),
+                'group' => $request->get('group_id'),
                 'limit_distance' => $request->get('limit_distance',20),
             ];
-            $query->join('field_dynamic_field_extend_location', function ($join) use ($near){
-                $join->on('user.id', '=', 'field_dynamic_field_extend_location.target_id')
-                    ->where('field_dynamic_field_extend_location.field_id',$near['field_id']);
-            });
+
+//            if($near['group'] != 'user'){
+                $query->join('field_dynamic_field_extend_location as types_' . $near['field_id'], function ($join) use ($near){
+                    $join->on('user.id', '=', 'types_'.$near['field_id'] . '.target_id')
+                        ->where('types_'.$near['field_id'] . '.group',$near['group'])
+                        ->where('types_'.$near['field_id'] . '.field_id',$near['field_id']);
+                });
+//            }
 
             $haversine = "(6371 * acos(cos(radians(" . $near['lat'] . "))
-                    * cos(radians(`lat`))
-                    * cos(radians(`lng`)
+                    * cos(radians(`xe_types_".$near['field_id']."`.`lat`))
+                    * cos(radians(`xe_types_".$near['field_id']."`.`lng`)
                     - radians(" . $near['lng'] . "))
                     + sin(radians(" . $near['lat'] . "))
-                    * sin(radians(`lat`))))";
+                    * sin(radians(`xe_types_".$near['field_id']."`.`lat`))))";
 
             $query->select("*")
                 ->selectRaw("{$haversine} AS distance")
