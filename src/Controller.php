@@ -139,8 +139,6 @@ class Controller extends BaseController
 
                     foreach($taxonomies as $taxonomy) {
                         $categories[$taxonomy->extra->slug]['group'] = $taxonomyHandler->getTaxFieldGroup($taxonomy->id);
-                        //TODO : 언젠가 필요하면 확장필드를 붙여주자 :)
-//                        $categories[$taxonomy->extra->slug]['items'] = $taxonomyHandler->getCategoryItemAttributes($taxonomy->id,$categories[$taxonomy->extra->slug]['group']);
                         $categories[$taxonomy->extra->slug]['items'] = $taxonomyHandler->getCategoryItemsTree($taxonomy->id,$categories[$taxonomy->extra->slug]['group']);
                     }
                     $menu->categories = $categories;
@@ -341,7 +339,7 @@ class Controller extends BaseController
                 $providerInstance = $socialite->driver($provider);
                 $providerInstance->stateless();
 
-                if (array_key_exists("name", $authedUser)) {
+                if (array_key_exists("name", $authedUser) || array_key_exists("name", $authedUser)) {
                     $user["name"] = $authedUser["name"];
                     $fullName = trim(
                         ($user["name"]['firstName'] ?? "")
@@ -355,13 +353,13 @@ class Controller extends BaseController
                     ->map([
                         "id" => $authedUser["user_id"],
                         "name" => $fullName ?? null,
-                        "email" => $user["email"] ?? null,
+                        "email" => $authedUser["email"] ?? null,
                     ]);
 
                 $userContract->setToken(Arr::get($authedToken, 'access_token'));
                 break;
         }
-
+		
         if (app('xe.config')->getVal('user.register.joinable') === false) {
             return redirect()->back()->with(
                 ['alert' => ['type' => 'danger', 'message' => xe_trans('xe::joinNotAllowed')]]
