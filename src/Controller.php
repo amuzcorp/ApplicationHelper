@@ -2,6 +2,7 @@
 namespace Amuz\XePlugin\ApplicationHelper;
 
 use Amuz\XePlugin\ApplicationHelper\Models\AhUserToken;
+use Amuz\XePlugin\ApplicationHelper\Models\AhUserAppleInfo;
 use Carbon\Carbon;
 use Illuminate\Foundation\Auth\AuthenticatesUsers;
 use Illuminate\Http\Request;
@@ -139,8 +140,6 @@ class Controller extends BaseController
 
                     foreach($taxonomies as $taxonomy) {
                         $categories[$taxonomy->extra->slug]['group'] = $taxonomyHandler->getTaxFieldGroup($taxonomy->id);
-                        //TODO : 언젠가 필요하면 확장필드를 붙여주자 :)
-//                        $categories[$taxonomy->extra->slug]['items'] = $taxonomyHandler->getCategoryItemAttributes($taxonomy->id,$categories[$taxonomy->extra->slug]['group']);
                         $categories[$taxonomy->extra->slug]['items'] = $taxonomyHandler->getCategoryItemsTree($taxonomy->id,$categories[$taxonomy->extra->slug]['group']);
                     }
                     $menu->categories = $categories;
@@ -338,10 +337,20 @@ class Controller extends BaseController
                     ->setExpiresIn(Arr::get($authedToken, 'access_token_expires_at'));
                 break;
             case "apple" :
+				$savedAppleInfo = AhUserAppleInfo::find($authedUser["user_id"]);
+				if($savedAppleInfo !== null){
+					$authedUser = (array) json_dec($savedAppleInfo->user);
+				}else{
+					$savedAppleInfo = new AhUserAppleInfo();
+					$savedAppleInfo->id = $authedUser["user_id"];
+					$savedAppleInfo->user = json_enc($authedUser);
+					$savedAppleInfo->save();
+				}
+				
                 $providerInstance = $socialite->driver($provider);
                 $providerInstance->stateless();
 
-                if (array_key_exists("name", $authedUser)) {
+                if (array_key_exists("name", $authedUser) || array_key_exists("name", $authedUser)) {
                     $user["name"] = $authedUser["name"];
                     $fullName = trim(
                         ($user["name"]['firstName'] ?? "")
@@ -355,13 +364,13 @@ class Controller extends BaseController
                     ->map([
                         "id" => $authedUser["user_id"],
                         "name" => $fullName ?? null,
-                        "email" => $user["email"] ?? null,
+                        "email" => $authedUser["email"] ?? null,
                     ]);
 
                 $userContract->setToken(Arr::get($authedToken, 'access_token'));
                 break;
         }
-
+		
         if (app('xe.config')->getVal('user.register.joinable') === false) {
             return redirect()->back()->with(
                 ['alert' => ['type' => 'danger', 'message' => xe_trans('xe::joinNotAllowed')]]
@@ -546,7 +555,7 @@ class Controller extends BaseController
         $query = XeUser::where('status', 'activated');
 
         //그룹찾기
-        if($userGroupId !== '') {
+        if($userGroupId !== '' && $userGroupId != 'user') {
             $query->whereHas('groups', function($q) use ($userGroupId){
                 $q->where('group_id',$userGroupId);
             });
@@ -561,19 +570,24 @@ class Controller extends BaseController
                 'field_id' => $request->get('near_target'),
                 'lat' => $request->get('lat'),
                 'lng' => $request->get('lng'),
+                'group' => $request->get('group_id'),
                 'limit_distance' => $request->get('limit_distance',20),
             ];
-            $query->join('field_dynamic_field_extend_location', function ($join) use ($near){
-                $join->on('user.id', '=', 'field_dynamic_field_extend_location.target_id')
-                    ->where('field_dynamic_field_extend_location.field_id',$near['field_id']);
-            });
+
+//            if($near['group'] != 'user'){
+                $query->join('field_dynamic_field_extend_location as types_' . $near['field_id'], function ($join) use ($near){
+                    $join->on('user.id', '=', 'types_'.$near['field_id'] . '.target_id')
+                        ->where('types_'.$near['field_id'] . '.group',$near['group'])
+                        ->where('types_'.$near['field_id'] . '.field_id',$near['field_id']);
+                });
+//            }
 
             $haversine = "(6371 * acos(cos(radians(" . $near['lat'] . "))
-                    * cos(radians(`lat`))
-                    * cos(radians(`lng`)
+                    * cos(radians(`xe_types_".$near['field_id']."`.`lat`))
+                    * cos(radians(`xe_types_".$near['field_id']."`.`lng`)
                     - radians(" . $near['lng'] . "))
                     + sin(radians(" . $near['lat'] . "))
-                    * sin(radians(`lat`))))";
+                    * sin(radians(`xe_types_".$near['field_id']."`.`lat`))))";
 
             $query->select("*")
                 ->selectRaw("{$haversine} AS distance")
