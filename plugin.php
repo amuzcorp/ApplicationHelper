@@ -1,6 +1,7 @@
 <?php
 namespace Amuz\XePlugin\ApplicationHelper;
 
+use Schema;
 use Amuz\XePlugin\ApplicationHelper\Middleware\AmuzApiHelpers;
 use Amuz\XePlugin\ApplicationHelper\Migrations\Migration;
 use Illuminate\Support\Str;
@@ -353,6 +354,10 @@ class Plugin extends AbstractPlugin
      */
     public function update()
     {
+		if(!Schema::hasTable('ah_user_apple_info')){
+			$migration = new Migration();
+			$migration->up();
+		}
         // implement code
     }
 
@@ -364,6 +369,7 @@ class Plugin extends AbstractPlugin
      */
     public function checkUpdated()
     {
+		if(!Schema::hasTable('ah_user_apple_info')) return false;
         // implement code
 
         return parent::checkUpdated();

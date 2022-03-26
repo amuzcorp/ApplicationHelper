@@ -2,6 +2,7 @@
 namespace Amuz\XePlugin\ApplicationHelper;
 
 use Amuz\XePlugin\ApplicationHelper\Models\AhUserToken;
+use Amuz\XePlugin\ApplicationHelper\Models\AhUserAppleInfo;
 use Carbon\Carbon;
 use Illuminate\Foundation\Auth\AuthenticatesUsers;
 use Illuminate\Http\Request;
@@ -336,6 +337,16 @@ class Controller extends BaseController
                     ->setExpiresIn(Arr::get($authedToken, 'access_token_expires_at'));
                 break;
             case "apple" :
+				$savedAppleInfo = AhUserAppleInfo::find($authedUser["user_id"]);
+				if($savedAppleInfo !== null){
+					$authedUser = (array) json_dec($savedAppleInfo->user);
+				}else{
+					$savedAppleInfo = new AhUserAppleInfo();
+					$savedAppleInfo->id = $authedUser["user_id"];
+					$savedAppleInfo->user = json_enc($authedUser);
+					$savedAppleInfo->save();
+				}
+				
                 $providerInstance = $socialite->driver($provider);
                 $providerInstance->stateless();
 

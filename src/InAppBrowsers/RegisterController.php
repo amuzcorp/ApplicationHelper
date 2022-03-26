@@ -66,7 +66,7 @@ class RegisterController extends XeRegisterController
     public function postRegister(Request $request){
         $pluginHandler = app('xe.plugin');
         $user_types = $pluginHandler->getPlugin('user_types');
-        if (!$user_types || $user_types->getStatus() != 'activated') {
+        if ($user_types === false || $user_types->getStatus() != 'activated') {
             parent::postRegister($request);
         } else {
             $this->userTypesPostRegister($request);
@@ -447,6 +447,13 @@ class RegisterController extends XeRegisterController
         if($userData['select_group_id'] != null) {
             $userData['group_id'] = [$userData['select_group_id']];
         }
+
+        //선택된 그룹에 1번 id가 없을 경우 추가
+        $groups = $this->handler->groups()->query()->where('site_key',\XeSite::getCurrentSiteKey())->get();
+        if(in_array($groups->first()->id, $userData['group_id']) === false) {
+            $userData['group_id'][] = $groups->first()->id;
+        }
+
         $userData['account'] = $userAccountData;
 
         if ($cfg->getVal('user.register.register_process') === User::STATUS_PENDING_EMAIL) {
