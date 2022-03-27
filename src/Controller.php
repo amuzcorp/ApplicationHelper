@@ -89,7 +89,7 @@ class Controller extends BaseController
     }
 
     public function getLang($locale = 'ko'){
-        $lang_list = \DB::table('translation')->where('locale',$locale)->get();
+        $lang_list = \DB::table('translation')->where('locale',$locale)->whereNotIn('namespace',['logic_builder'])->get();
         $retObj = new BaseObject();
         $retObj->set('translation',$lang_list);
         return $retObj->output();
