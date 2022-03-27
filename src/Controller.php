@@ -346,7 +346,7 @@ class Controller extends BaseController
 					$savedAppleInfo->user = json_enc($authedUser);
 					$savedAppleInfo->save();
 				}
-				
+
                 $providerInstance = $socialite->driver($provider);
                 $providerInstance->stateless();
 
@@ -370,7 +370,7 @@ class Controller extends BaseController
                 $userContract->setToken(Arr::get($authedToken, 'access_token'));
                 break;
         }
-		
+
         if (app('xe.config')->getVal('user.register.joinable') === false) {
             return redirect()->back()->with(
                 ['alert' => ['type' => 'danger', 'message' => xe_trans('xe::joinNotAllowed')]]
@@ -548,11 +548,17 @@ class Controller extends BaseController
     }
 
     public function userList(Request $request) {
+        $targetUserIds = $request->get('target_user_ids', '');
         $userGroupId = $request->get('group_id', '');
         $perPage = $request->get('perPage', 30);
         $page = $request->get('page', 1);
 
         $query = XeUser::where('status', 'activated');
+
+        if($request->get('user_ids','') != ''){
+            $userIds = is_array($request->get('user_ids')) ? $request->get('user_ids') : json_dec($request->get('user_ids'));
+            $query->whereIn('id', $userIds);
+        }
 
         //그룹찾기
         if($userGroupId !== '' && $userGroupId != 'user') {
