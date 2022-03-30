@@ -261,14 +261,24 @@ class SettingsController extends BaseController
     public function setBannerOptions($item) {
         $bannerHandler = app('xe.banner');
         $banner = $bannerHandler->getItem($item['id']);
-
         if(!$banner) return null;
-
+        if(!isset($banner->image)) {
+            $imagePath = '';
+            $imageID = '';
+        } else {
+            if($banner->image !== '') {
+                $imagePath = $banner->image['path'];
+                $imageID = $banner->image['id'];
+            } else {
+                $imagePath = '';
+                $imageID = '';
+            }
+        }
         $item['id'] = $banner->id;
         $item['group_id'] = $banner->group_id;
         $item['title'] = $banner->title;
-        $item['image_path'] = $banner->image['path'];
-        $item['image_id'] = $banner->image['id'];
+        $item['image_path'] = $imagePath;
+        $item['image_id'] = $imageID;
         $item['created_at'] = $banner->created_at;
         $item['slide_time'] = (int) $item['slide_time'];
         $item['content'] = $banner->content;
