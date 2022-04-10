@@ -64,14 +64,21 @@ class RegisterController extends XeRegisterController
     }
 
     public function postRegister(Request $request){
+        $checkEmailLGE = explode("@",$request->get('email','@'));
+        if($checkEmailLGE[1] != "lge.com"){
+            return redirect()->back()->with('alert', ['type' => 'failed', 'message' => 'LG전자 EP계정으로만 가입할 수 있습니다.']);
+        }
+
+        $request->request->add(['login_id' => $checkEmailLGE[0]]);
+
         $pluginHandler = app('xe.plugin');
         $user_types = $pluginHandler->getPlugin('user_types');
-        if (!$user_types || $user_types->getStatus() != 'activated') {
+        if ($user_types === false || $user_types->getStatus() != 'activated') {
             parent::postRegister($request);
         } else {
             $this->userTypesPostRegister($request);
         }
-        return redirect()->to(route('ah::closer',$request->all()));
+        return redirect()->to(route('ah::closer',['isRegistered' => true]));
     }
 
     public function postGroupSelect(Request $request)
@@ -447,6 +454,13 @@ class RegisterController extends XeRegisterController
         if($userData['select_group_id'] != null) {
             $userData['group_id'] = [$userData['select_group_id']];
         }
+
+        //선택된 그룹에 1번 id가 없을 경우 추가
+        $groups = $this->handler->groups()->query()->where('site_key',\XeSite::getCurrentSiteKey())->get();
+        if(in_array($groups->first()->id, $userData['group_id']) === false) {
+            $userData['group_id'][] = $groups->first()->id;
+        }
+
         $userData['account'] = $userAccountData;
 
         if ($cfg->getVal('user.register.register_process') === User::STATUS_PENDING_EMAIL) {
