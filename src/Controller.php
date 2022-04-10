@@ -377,13 +377,26 @@ class Controller extends BaseController
             );
         }
 
+        //social 계정 이메일 같은경우 연결
         $userAccount = $socialLoginHandler->getRegisteredUserAccount($userContract, $provider);
+        if($userAccount == null && $userContract->email){
+            $signedUser = XeUser::where('email',$userContract->email)->first();
+            if($signedUser != null){
+                try {
+                    $socialLoginHandler->connectAccount($signedUser, $userContract, $provider);
+                } catch (ExistsAccountException $e) {
+                    $this->throwHttpException(xe_trans('social_login::alreadyRegisteredAccount'), 409, $e);
+                }
+
+                $userAccount = $socialLoginHandler->getRegisteredUserAccount($userContract, $provider);
+            }
+        }
+
         if ($userAccount !== null) {
             $user = $userAccount->user;
             $retObj = $this->doLogin($request, $retObj, $user);
             return redirect()->route('ah::closer',['remember_token'=>$retObj->get('remember_token'),'user'=>$retObj->get('user')]);
         }
-
         //가입된 계정이 없을 경우 회원가입
         if (app('xe.config')->getVal('social_login.registerType', 'simple') === 'step' &&
             $socialLoginHandler->checkNeedRegisterForm($userContract) === false) {
@@ -600,6 +613,35 @@ class Controller extends BaseController
                 ->whereRaw("{$haversine} < ?", [$near['limit_distance']]);
         }
 
+        if($request->get('only_has_profile','N') == "Y"){
+            $query->whereNotNull("profile_image_id");
+        }
+
+        if($request->get('search_taxonomy','') != ''){
+            //{allow_category_item_item_id: [313, 312, 311, 309, 351, 349], current_status_item_id: [], gender_boolean: []}
+            $searchTargets = json_dec($request->get('search_taxonomy','[]'));
+
+            foreach($searchTargets as $fieldId => $fieldInfo){
+                $fieldType = $fieldInfo[0];
+                $selectedValues = $fieldInfo[1];
+                switch($fieldType){
+                    case "category" :
+                        foreach($selectedValues as $val){
+                            $query->where($fieldId . '.item_id','like',"%" . $val . "%");
+                        }
+                        break;
+                    case "boolean" :
+                        $query->where(function($q) use ($fieldId,$selectedValues){
+                            foreach($selectedValues as $val){
+                                $q->orWhere($fieldId . '.boolean',$val);
+                            }
+                        });
+                    break;
+                }
+
+            }
+        }
+
         $query->with('groups');
         $this->makeOrder($query, $request);
 
@@ -609,6 +651,7 @@ class Controller extends BaseController
         $count = 0;
 
         $userList = $paginate->getCollection()->keyBy('id');
+
         foreach($userList as $key => $user) $userList[$key] = $this->arrangeUserInfo($user,$request);
         $paginate->setCollection($userList);
 
