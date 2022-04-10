@@ -45,7 +45,7 @@ class Migration
                 $table->primary('token');
             });
         }
-		
+
 		$this->table = "ah_user_apple_info";
         if(!Schema::hasTable($this->table)) {
             Schema::create($this->table, function (Blueprint $table) {
@@ -55,7 +55,7 @@ class Migration
                 $table->text('user')->comment('user json encoded');
                 $table->timestamp('created_at')->nullable()->index()->comment('created date');
                 $table->timestamp('updated_at')->nullable()->index()->comment('updated date');
-				
+
                 $table->primary('id');
             });
         }
