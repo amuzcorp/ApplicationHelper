@@ -617,6 +617,31 @@ class Controller extends BaseController
             $query->whereNotNull("profile_image_id");
         }
 
+        if($request->get('search_taxonomy','') != ''){
+            //{allow_category_item_item_id: [313, 312, 311, 309, 351, 349], current_status_item_id: [], gender_boolean: []}
+            $searchTargets = json_dec($request->get('search_taxonomy','[]'));
+
+            foreach($searchTargets as $fieldId => $fieldInfo){
+                $fieldType = $fieldInfo[0];
+                $selectedValues = $fieldInfo[1];
+                switch($fieldType){
+                    case "category" :
+                        foreach($selectedValues as $val){
+                            $query->where($fieldId . '.item_id','like',"%" . $val . "%");
+                        }
+                        break;
+                    case "boolean" :
+                        $query->where(function($q) use ($fieldId,$selectedValues){
+                            foreach($selectedValues as $val){
+                                $q->orWhere($fieldId . '.boolean',$val);
+                            }
+                        });
+                    break;
+                }
+
+            }
+        }
+
         $query->with('groups');
         $this->makeOrder($query, $request);
 

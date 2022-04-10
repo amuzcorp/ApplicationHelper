@@ -6,6 +6,7 @@ use App\Facades\XeFrontend;
 use App\Facades\XePresenter;
 use App\Http\Controllers\Controller as BaseController;
 use App\Http\Sections\SkinSection;
+use Illuminate\Support\Str;
 use Xpressengine\Http\Request;
 use Xpressengine\Menu\Models\Menu;
 use Xpressengine\Routing\InstanceRoute;
@@ -201,8 +202,15 @@ class SettingsController extends BaseController
 
         $menus = Menu::where('site_key',\XeSite::getCurrentSiteKey())->get();
         $main_banner = $app_config->get('banner_list');
+        $idx = 0;
+        $str = Str::random(8);
         foreach($main_banner as $key => $banner_item) {
+            $idx++;
             $item = $this->setBannerOptions($banner_item);
+
+            if(!isset($item['idx']) || $item['idx'] === '') {
+                $item['idx'] = $str.'_'.$idx;
+            }
 
             if($item === null) {
                 unset($main_banner[$key]);
@@ -215,6 +223,7 @@ class SettingsController extends BaseController
             else $item['menu'] = $banner_item['menu'];
             $main_banner[$key] = $item;
         }
+
         $sortArr = array();
         foreach($main_banner as $res) $sortArr [] = $res['menu'];
         array_multisort($sortArr , SORT_ASC, $main_banner);
@@ -222,10 +231,15 @@ class SettingsController extends BaseController
         $content_banner = $app_config->get('content_banner_list');
         foreach($content_banner as $key => $banner_item) {
             $item = $this->setBannerOptions($banner_item);
+            $idx++;
 
             if($item === null) {
                 unset($content_banner[$key]);
                 continue;
+            }
+
+            if(!isset($item['idx'])) {
+                $item['idx'] = $str.'_'.$idx;
             }
 
             $menus = Menu::where('site_key',\XeSite::getCurrentSiteKey())->get();
@@ -245,7 +259,7 @@ class SettingsController extends BaseController
 
         // output
         return XePresenter::make('ApplicationHelper::views.settings.banner.index',
-            compact('title', 'description', 'banner_group', 'app_config', 'main_banner', 'content_banner', 'app_banner_groups', 'menus'));
+            compact('title', 'description', 'banner_group', 'app_config', 'main_banner', 'content_banner', 'app_banner_groups', 'menus', 'str'));
     }
 
     public function config_update(Request $request) {
