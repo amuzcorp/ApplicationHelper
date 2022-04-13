@@ -670,6 +670,25 @@ class Controller extends BaseController
         return $userGorups;
     }
 
+    //간단하게 스스로의 정보를 받은필드찾아서 업데이트한다.
+    public function userUpdate(Request $request){
+        $loggedUser = $this->auth->user();
+
+        $inputs = $request->except('_token');
+        $target_update_datas = [];
+        foreach($inputs as $key => $val){
+//            if(!isset($loggedUser->{$key})) continue;
+            $target_update_datas[$key] = $val;
+        }
+        $result = $loggedUser->update($target_update_datas);
+
+        $retObj = new BaseObject();
+        $retObj->set('updated',$target_update_datas);
+        $retObj->set('result',$result);
+
+        return $retObj->output();
+    }
+
     public function makeOrder($query, $request)
     {
         $orderType = $request->get('order_type', '');
@@ -733,7 +752,7 @@ class Controller extends BaseController
                 $deviceInfo = $retObj->get('deviceInfo');
                 $deviceInfo['token'] = $token;
                 $deviceInfo['user_id'] = $user->id;
-                $user_token = AhUserToken::firstOrNew(['device_id' => $deviceInfo['device_id']]);
+                $user_token = AhUserToken::firstOrNew(['device_id' => $deviceInfo['device_id'], 'user_id' => $user->id]);
                 foreach($deviceInfo as $key => $val) $user_token->{$key} = $val;
 
                 $user_token->save();
@@ -746,6 +765,13 @@ class Controller extends BaseController
                 $retObj->set('remember_token',$token);
                 break;
         }
+
+        //로그인 시점에 샌드버드와 회원정보 동기화
+        if(Schema::hasTable('sendbird_user_token')){
+            $sendBirdChatApp = app('amuz.sendbird.chat');
+            $sendBirdChatApp->syncUserData($user->id);
+        }
+
         return $retObj;
     }
 

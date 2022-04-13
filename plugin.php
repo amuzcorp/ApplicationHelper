@@ -117,6 +117,8 @@ class Plugin extends AbstractPlugin
 
                 Route::get('/auth/user_list',['as' => 'ah::user_list','uses' => 'Amuz\XePlugin\ApplicationHelper\Controller@userList']);
                 Route::get('/auth/user_groups',['as' => 'ah::user_groups','uses' => 'Amuz\XePlugin\ApplicationHelper\Controller@user_groups']);
+
+                Route::any('/auth/update',['as' => 'ah::user_update','uses' => 'Amuz\XePlugin\ApplicationHelper\Controller@userUpdate']);
         });
     }
 
