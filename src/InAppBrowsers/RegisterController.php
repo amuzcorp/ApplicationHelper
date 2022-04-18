@@ -9,6 +9,7 @@ use Amuz\XePlugin\UserTypes\Controllers\RegisterController as UserTypesRegisterC
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 use XePresenter;
 use XeFrontend;
 use XeTheme;
@@ -64,13 +65,6 @@ class RegisterController extends XeRegisterController
     }
 
     public function postRegister(Request $request){
-        $checkEmailLGE = explode("@",$request->get('email','@'));
-        if($checkEmailLGE[1] != "lge.com"){
-            return redirect()->back()->with('alert', ['type' => 'failed', 'message' => 'LG전자 EP계정으로만 가입할 수 있습니다.']);
-        }
-
-        $request->request->add(['login_id' => $checkEmailLGE[0]]);
-
         $pluginHandler = app('xe.plugin');
         $user_types = $pluginHandler->getPlugin('user_types');
         if ($user_types === false || $user_types->getStatus() != 'activated') {
@@ -78,7 +72,7 @@ class RegisterController extends XeRegisterController
         } else {
             $this->userTypesPostRegister($request);
         }
-        return redirect()->to(route('ah::closer',['isRegistered' => true]));
+        return redirect()->to(route('ah::closer',['isRegistered' => true, 'email' => $request->get('email'), 'password' => $request->get('password')]));
     }
 
     public function postGroupSelect(Request $request)
