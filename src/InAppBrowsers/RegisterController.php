@@ -9,6 +9,7 @@ use Amuz\XePlugin\UserTypes\Controllers\RegisterController as UserTypesRegisterC
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 use XePresenter;
 use XeFrontend;
 use XeTheme;
@@ -71,7 +72,7 @@ class RegisterController extends XeRegisterController
         } else {
             $this->userTypesPostRegister($request);
         }
-        return redirect()->to(route('ah::closer',['isRegistered' => true]));
+        return redirect()->to(route('ah::closer',['isRegistered' => true, 'email' => $request->get('email'), 'password' => $request->get('password')]));
     }
 
     public function postGroupSelect(Request $request)
