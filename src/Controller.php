@@ -20,6 +20,7 @@ use XeDB;
 use App\Http\Controllers\Controller as BaseController;
 use Xpressengine\Keygen\Keygen;
 use Xpressengine\Menu\Models\MenuItem;
+use Xpressengine\Plugins\Banner\Models\Group;
 use Xpressengine\Plugins\Board\ConfigHandler;
 use Xpressengine\Plugins\Board\Models\Board;
 use Xpressengine\Plugins\Board\Services\BoardService;
@@ -33,6 +34,7 @@ use Xpressengine\User\Guard;
 use Xpressengine\User\Models\User;
 use Xpressengine\User\Models\UserGroup;
 use Xpressengine\User\UserHandler;
+use Xpressengine\Plugins\Banner\Handler as BannerHandler;
 
 use Xpressengine\User\Models\User as XeUser;
 
@@ -159,6 +161,35 @@ class Controller extends BaseController
         $retObj->set('site_key',$site_key);
         $retObj->set('menu_list',$menu_list);
 //        dd($retObj);
+        return $retObj->output();
+    }
+
+    public function getBanner(BannerHandler $handler,$banner_key) {
+        $site_key = \XeSite::getCurrentSiteKey();
+        $xe_config = app('xe.config');
+        $ah_config = $xe_config->get('application_helper');
+        if($ah_config == null){
+            $xe_config->set('application_helper',[]);
+            $ah_config = $xe_config->get('application_helper');
+        }
+
+        $ah_banner_groups = $ah_config->get('banner',[]);
+        $banner_config = $ah_banner_groups[$banner_key];
+        $group_id = $banner_config['group'];
+        $group = Group::find($group_id);
+        $banner_items = $handler->getItems($group);
+        $banner_data = [];
+        foreach($banner_items as $banner) {
+            if($banner->image === "") continue;
+            $banner->slide_time = $banner_config['slide_time'];
+            $banner_data[] = $banner->toArray();
+        }
+
+        $retObj = new BaseObject();
+        $retObj->set('site_key',$site_key);
+        $retObj->set('banner_key',$banner_key);
+        $retObj->set('banner_group_id',$group_id);
+        $retObj->set('banner_items',$banner_data);
         return $retObj->output();
     }
 
@@ -377,26 +408,13 @@ class Controller extends BaseController
             );
         }
 
-        //social 계정 이메일 같은경우 연결
         $userAccount = $socialLoginHandler->getRegisteredUserAccount($userContract, $provider);
-        if($userAccount == null && $userContract->email){
-            $signedUser = XeUser::where('email',$userContract->email)->first();
-            if($signedUser != null){
-                try {
-                    $socialLoginHandler->connectAccount($signedUser, $userContract, $provider);
-                } catch (ExistsAccountException $e) {
-                    $this->throwHttpException(xe_trans('social_login::alreadyRegisteredAccount'), 409, $e);
-                }
-
-                $userAccount = $socialLoginHandler->getRegisteredUserAccount($userContract, $provider);
-            }
-        }
-
         if ($userAccount !== null) {
             $user = $userAccount->user;
             $retObj = $this->doLogin($request, $retObj, $user);
             return redirect()->route('ah::closer',['remember_token'=>$retObj->get('remember_token'),'user'=>$retObj->get('user')]);
         }
+
         //가입된 계정이 없을 경우 회원가입
         if (app('xe.config')->getVal('social_login.registerType', 'simple') === 'step' &&
             $socialLoginHandler->checkNeedRegisterForm($userContract) === false) {
@@ -613,35 +631,6 @@ class Controller extends BaseController
                 ->whereRaw("{$haversine} < ?", [$near['limit_distance']]);
         }
 
-        if($request->get('only_has_profile','N') == "Y"){
-            $query->whereNotNull("profile_image_id");
-        }
-
-        if($request->get('search_taxonomy','') != ''){
-            //{allow_category_item_item_id: [313, 312, 311, 309, 351, 349], current_status_item_id: [], gender_boolean: []}
-            $searchTargets = json_dec($request->get('search_taxonomy','[]'));
-
-            foreach($searchTargets as $fieldId => $fieldInfo){
-                $fieldType = $fieldInfo[0];
-                $selectedValues = $fieldInfo[1];
-                switch($fieldType){
-                    case "category" :
-                        foreach($selectedValues as $val){
-                            $query->where($fieldId . '.item_id','like',"%" . $val . "%");
-                        }
-                        break;
-                    case "boolean" :
-                        $query->where(function($q) use ($fieldId,$selectedValues){
-                            foreach($selectedValues as $val){
-                                $q->orWhere($fieldId . '.boolean',$val);
-                            }
-                        });
-                    break;
-                }
-
-            }
-        }
-
         $query->with('groups');
         $this->makeOrder($query, $request);
 
@@ -651,7 +640,6 @@ class Controller extends BaseController
         $count = 0;
 
         $userList = $paginate->getCollection()->keyBy('id');
-
         foreach($userList as $key => $user) $userList[$key] = $this->arrangeUserInfo($user,$request);
         $paginate->setCollection($userList);
 
@@ -668,25 +656,6 @@ class Controller extends BaseController
     public function user_groups() {
         $userGorups = UserGroup::get()->keyBy('name');
         return $userGorups;
-    }
-
-    //간단하게 스스로의 정보를 받은필드찾아서 업데이트한다.
-    public function userUpdate(Request $request){
-        $loggedUser = $this->auth->user();
-
-        $inputs = $request->except('_token');
-        $target_update_datas = [];
-        foreach($inputs as $key => $val){
-//            if(!isset($loggedUser->{$key})) continue;
-            $target_update_datas[$key] = $val;
-        }
-        $result = $loggedUser->update($target_update_datas);
-
-        $retObj = new BaseObject();
-        $retObj->set('updated',$target_update_datas);
-        $retObj->set('result',$result);
-
-        return $retObj->output();
     }
 
     public function makeOrder($query, $request)
@@ -752,7 +721,7 @@ class Controller extends BaseController
                 $deviceInfo = $retObj->get('deviceInfo');
                 $deviceInfo['token'] = $token;
                 $deviceInfo['user_id'] = $user->id;
-                $user_token = AhUserToken::firstOrNew(['device_id' => $deviceInfo['device_id'], 'user_id' => $user->id]);
+                $user_token = AhUserToken::firstOrNew(['device_id' => $deviceInfo['device_id']]);
                 foreach($deviceInfo as $key => $val) $user_token->{$key} = $val;
 
                 $user_token->save();
@@ -765,13 +734,6 @@ class Controller extends BaseController
                 $retObj->set('remember_token',$token);
                 break;
         }
-
-        //로그인 시점에 샌드버드와 회원정보 동기화
-        if(Schema::hasTable('sendbird_user_token')){
-            $sendBirdChatApp = app('amuz.sendbird.chat');
-            $sendBirdChatApp->syncUserData($user->id);
-        }
-
         return $retObj;
     }
 

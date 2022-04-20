@@ -64,13 +64,6 @@ class RegisterController extends XeRegisterController
     }
 
     public function postRegister(Request $request){
-        $checkEmailLGE = explode("@",$request->get('email','@'));
-        if($checkEmailLGE[1] != "lge.com"){
-            return redirect()->back()->with('alert', ['type' => 'failed', 'message' => 'LG전자 EP계정으로만 가입할 수 있습니다.']);
-        }
-
-        $request->request->add(['login_id' => $checkEmailLGE[0]]);
-
         $pluginHandler = app('xe.plugin');
         $user_types = $pluginHandler->getPlugin('user_types');
         if ($user_types === false || $user_types->getStatus() != 'activated') {
