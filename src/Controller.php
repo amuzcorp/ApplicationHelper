@@ -408,7 +408,21 @@ class Controller extends BaseController
             );
         }
 
+        //social 계정 이메일 같은경우 연결
         $userAccount = $socialLoginHandler->getRegisteredUserAccount($userContract, $provider);
+        if($userAccount == null && $userContract->email){
+            $signedUser = XeUser::where('email',$userContract->email)->first();
+            if($signedUser != null){
+                try {
+                    $socialLoginHandler->connectAccount($signedUser, $userContract, $provider);
+                } catch (ExistsAccountException $e) {
+                    $this->throwHttpException(xe_trans('social_login::alreadyRegisteredAccount'), 409, $e);
+                }
+
+                $userAccount = $socialLoginHandler->getRegisteredUserAccount($userContract, $provider);
+            }
+        }
+
         if ($userAccount !== null) {
             $user = $userAccount->user;
             $retObj = $this->doLogin($request, $retObj, $user);
@@ -631,6 +645,35 @@ class Controller extends BaseController
                 ->whereRaw("{$haversine} < ?", [$near['limit_distance']]);
         }
 
+        if($request->get('only_has_profile','N') == "Y"){
+            $query->whereNotNull("profile_image_id");
+        }
+
+        if($request->get('search_taxonomy','') != ''){
+            //{allow_category_item_item_id: [313, 312, 311, 309, 351, 349], current_status_item_id: [], gender_boolean: []}
+            $searchTargets = json_dec($request->get('search_taxonomy','[]'));
+
+            foreach($searchTargets as $fieldId => $fieldInfo){
+                $fieldType = $fieldInfo[0];
+                $selectedValues = $fieldInfo[1];
+                switch($fieldType){
+                    case "category" :
+                        foreach($selectedValues as $val){
+                            $query->where($fieldId . '.item_id','like',"%" . $val . "%");
+                        }
+                        break;
+                    case "boolean" :
+                        $query->where(function($q) use ($fieldId,$selectedValues){
+                            foreach($selectedValues as $val){
+                                $q->orWhere($fieldId . '.boolean',$val);
+                            }
+                        });
+                        break;
+                }
+
+            }
+        }
+
         $query->with('groups');
         $this->makeOrder($query, $request);
 
@@ -656,6 +699,25 @@ class Controller extends BaseController
     public function user_groups() {
         $userGorups = UserGroup::get()->keyBy('name');
         return $userGorups;
+    }
+
+    //간단하게 스스로의 정보를 받은필드찾아서 업데이트한다.
+    public function userUpdate(Request $request){
+        $loggedUser = $this->auth->user();
+
+        $inputs = $request->except('_token');
+        $target_update_datas = [];
+        foreach($inputs as $key => $val){
+//            if(!isset($loggedUser->{$key})) continue;
+            $target_update_datas[$key] = $val;
+        }
+        $result = $loggedUser->update($target_update_datas);
+
+        $retObj = new BaseObject();
+        $retObj->set('updated',$target_update_datas);
+        $retObj->set('result',$result);
+
+        return $retObj->output();
     }
 
     public function makeOrder($query, $request)
@@ -721,7 +783,7 @@ class Controller extends BaseController
                 $deviceInfo = $retObj->get('deviceInfo');
                 $deviceInfo['token'] = $token;
                 $deviceInfo['user_id'] = $user->id;
-                $user_token = AhUserToken::firstOrNew(['device_id' => $deviceInfo['device_id']]);
+                $user_token = AhUserToken::firstOrNew(['device_id' => $deviceInfo['device_id'], 'user_id' => $user->id]);
                 foreach($deviceInfo as $key => $val) $user_token->{$key} = $val;
 
                 $user_token->save();
@@ -734,6 +796,13 @@ class Controller extends BaseController
                 $retObj->set('remember_token',$token);
                 break;
         }
+
+        //로그인 시점에 샌드버드와 회원정보 동기화
+        if(Schema::hasTable('sendbird_user_token')){
+            $sendBirdChatApp = app('amuz.sendbird.chat');
+            $sendBirdChatApp->syncUserData($user->id);
+        }
+
         return $retObj;
     }
 
