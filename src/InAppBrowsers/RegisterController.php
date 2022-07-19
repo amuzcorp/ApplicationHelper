@@ -275,7 +275,8 @@ class RegisterController extends XeRegisterController
                     $requireTerms = app('xe.terms')->fetchRequireEnabled();
                     $termAgreeType = app('xe.config')->getVal('user.register.term_agree_type');
 
-                    if ($requireTerms->count() > 0 && $termAgreeType !== UserRegisterHandler::TERM_AGREE_NOT) {
+                    // UserRegisterHandler::TERM_AGREE_PRE = 회원약관 동의가 회원정보 입력전에 출력 될 경우
+                    if ($requireTerms->count() > 0 && $termAgreeType !== UserRegisterHandler::TERM_AGREE_PRE) {
                         $requireTermValidator = Validator::make(
                             $request->all(),
                             [],
@@ -309,6 +310,9 @@ class RegisterController extends XeRegisterController
                 $user = $this->registerUser($request->except(['_token']));
                 $userData['id'] = $user->id;    // 생성된 user id
                 app('amuz.usertype.handler')->insertDf($userData);  // 회원 그룹별 확장 필드 저장
+                if(isset($request->profile_img_id) && $request->profile_img_id !== '' && $request->profile_img_id) {
+                    \XeDB::table('user')->where('id', $user->id)->update(['profile_image_id' => $request->profile_img_id]);
+                };
             } catch (ExistsAccountException $e) {
                 XeDB::rollback();
                 $this->throwHttpException(xe_trans('user_types::alreadyRegisteredAccount'), 409, $e);
@@ -331,6 +335,9 @@ class RegisterController extends XeRegisterController
                 $user = $this->handler->create($userData);
                 $userData['id'] = $user->id;    // 생성된 user id
                 app('amuz.usertype.handler')->insertDf($userData);  // 회원 그룹별 확장 필드 저장
+                if(isset($request->profile_img_id) && $request->profile_img_id !== '' && $request->profile_img_id) {
+                    \XeDB::table('user')->where('id', $user->id)->update(['profile_image_id' => $request->profile_img_id]);
+                };
             } catch (\Exception $e) {
                 XeDB::rollback();
                 throw $e;

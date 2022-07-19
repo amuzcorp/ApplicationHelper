@@ -1,3 +1,4 @@
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
 {{ XeFrontend::css('assets/core/xe-ui/css/xe-ui-without-base.css')->load() }}
 {{ XeFrontend::js('assets/core/user/user_register.js')->load() }}
 

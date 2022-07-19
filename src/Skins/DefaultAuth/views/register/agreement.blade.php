@@ -1,6 +1,11 @@
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,minimum-scale=1.0,user-scalable=no">
 {{ XeFrontend::css('assets/core/xe-ui/css/xe-ui-without-base.css')->load() }}
 {{ XeFrontend::js('assets/core/user/user_register.js')->load() }}
-
+<style>
+    .user ul, .user h1, .user form, .user fieldset, .user .hr .text-hr, .user .auth-text {
+        display: contents !important;
+    }
+</style>
 <div class="user user--signup user--terms">
     <h2 class="user__title">{{ xe_trans('xe::signUp') }}</h2>
     <p class="user__text">{!! nl2br(app('xe.config')->getVal('user.register.register_guide')) !!}</p>

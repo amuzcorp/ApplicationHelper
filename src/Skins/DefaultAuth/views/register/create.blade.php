@@ -63,39 +63,7 @@
                             @break
                         @endswitch
                     @else
-                        @if($fieldId == "default-info")
-
-                            @inject('passwordValidator', 'xe.password.validator')
-                            {{-- email --}}
-                            <div class="xu-form-group xu-form-group--large">
-                                <label class="xu-form-group__label" for="f-email">{{ xe_trans('xe::email') }}</label>
-                                <div class="xu-form-group__box">
-                                    <input type="text" id="f-email" class="xe-form-control xu-form-group__control" placeholder="ep-account@lge.com" name="email" value="{{ old('email') }}" required data-valid-name="이메일">
-                                    <p style="padding:0; margin:0; color:red;">반드시 LG전자 EP계정을 입력해야 합니다.</p>
-                                </div>
-                            </div>
-
-                            {{-- name --}}
-                            <div class="xu-form-group xu-form-group--large">
-                                <label class="xu-form-group__label" for="f-name">{{ xe_trans('xe::name') }}</label>
-                                <div class="xu-form-group__box">
-                                    <input type="text" id="f-name" class="xu-form-group__control" placeholder="{{ xe_trans('xe::enterName') }}" name="display_name" value="{{ old('display_name') }}" required data-valid-name="{{ xe_trans('xe::name') }}">
-                                </div>
-                            </div>
-
-                            {{-- password --}}
-                            <div class="xu-form-group xu-form-group--large">
-                                <label class="xu-form-group__label" for="f-password">{{ xe_trans('xe::password') }}</label>
-                                <div class="xu-form-group__box xu-form-group__box--icon-right">
-                                    <input type="password" id="f-password" class="xu-form-group__control" placeholder="{{ xe_trans('xe::enterPassword') }}" name="password" required data-valid-name="{{xe_trans('xe::password')}}">
-                                    <button type="button" class="xu-form-group__icon __xe-toggle-password">
-                                        <i class="xi-eye"></i>
-                                    </button>
-                                </div>
-                            </div>
-                        @else
-                            {{ $part->render() }}
-                        @endif
+                        {{ $part->render() }}
                     @endif
                 @endforeach
             </div>
