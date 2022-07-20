@@ -6,12 +6,14 @@ use App\Facades\XeFrontend;
 use App\Facades\XePresenter;
 use App\Http\Controllers\Controller as BaseController;
 use App\Http\Sections\SkinSection;
+use Illuminate\Contracts\Cookie\Factory as CookieFactory;
 use Illuminate\Support\Str;
 use Xpressengine\Http\Request;
 use Xpressengine\Menu\Models\Menu;
 use Xpressengine\Plugins\Banner\Models\Group;
 use Xpressengine\Routing\InstanceRoute;
 use Xpressengine\Plugins\Banner\Handler as BannerHandler;
+use Illuminate\Contracts\Foundation\Application;
 
 class SettingsController extends BaseController
 {
@@ -340,4 +342,28 @@ class SettingsController extends BaseController
         return $item;
     }
 
+    public function setLocale(Request $request, Application $app) {
+        $config = $app['config'];
+        $request->setConfig($config);
+
+        $locale = $request->get('locale') ?: $request->cookie('locale');
+        if (!in_array($locale, $config['xe.lang.locales'])) {
+            return ['error' => -1, 'message' => xe_trans('ah::unsupported_locale')];
+//            $locale = $this->getFallbackLocale($app);
+        }
+
+        $app['cookie']->queue(
+            $app[CookieFactory::class]->forever('locale', $locale, null, null, false, false)
+        );
+
+        $app->setLocale($locale);
+
+        return ['error' => 0, 'message' => xe_trans('xe::saved')];
+    }
+
+
+    protected function getFallbackLocale($app)
+    {
+        return $app['xe.translator']->getLocale();
+    }
 }

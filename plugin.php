@@ -31,6 +31,20 @@ class Plugin extends AbstractPlugin
 
         $this->interceptDynamicField();
 
+        $data = [
+            'unsupported_locale' => [
+                'ko' => '지원하지 않는 타입의 로케일코드 입니다',
+                'en' => 'Unsupported type of locale code',
+            ]
+        ];
+
+        foreach($data as $key => $item) {
+            $langCode = 'ah::'.$key;
+            foreach($item as $locale => $text) {
+                \XeLang::save($langCode, $locale, $text, true);
+            }
+        }
+
         if(!app('xe.config')->get('application_helper.app_config')) {
 
             app('xe.config')->set('application_helper', []);
@@ -123,6 +137,9 @@ class Plugin extends AbstractPlugin
                 Route::get('/auth/user_groups',['as' => 'ah::user_groups','uses' => 'Amuz\XePlugin\ApplicationHelper\Controller@user_groups']);
 
                 Route::any('/auth/update',['as' => 'ah::user_update','uses' => 'Amuz\XePlugin\ApplicationHelper\Controller@userUpdate']);
+
+                //로케일 언어 수정 API
+                Route::get('/auth/set_locale',['as' => 'ah::set_locale','uses' => 'Amuz\XePlugin\ApplicationHelper\SettingsController@setLocale']);
             });
     }
 
