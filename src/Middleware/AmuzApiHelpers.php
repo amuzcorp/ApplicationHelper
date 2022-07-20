@@ -24,16 +24,12 @@ class AmuzApiHelpers
                 $user = User::find($token->user_id);
                 if(!$user){
                     $token->delete();
-//                    $retObj = new BaseObject();
-//                    $retObj->addError('ERR_BROKEN_SESSION','세션이 만료되었거나 로그아웃 되었습니다.');
-//                    return $retObj->output();
+                    return response('Unauthorized.', 401);
                 }else{
                     $auth->login($user);
                 }
-//            }else{
-//                $retObj = new BaseObject();
-//                $retObj->addError('ERR_BROKEN_SESSION','세션이 만료되었거나 로그아웃 되었습니다.');
-//                return $retObj->output();
+            }else{
+                return response('Unauthorized.', 401);
             }
         }
         return $next($request);
