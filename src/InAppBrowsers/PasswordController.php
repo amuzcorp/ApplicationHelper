@@ -66,7 +66,7 @@ class PasswordController extends Controller {
         $this->passwords = $passwords;
         $this->handler = app('xe.user');
 
-        XeTheme::selectSiteTheme();
+        XeTheme::selectBlankTheme();
         XePresenter::setSkinTargetId('ahib/user/auth');
 
         $this->middleware('guest');
