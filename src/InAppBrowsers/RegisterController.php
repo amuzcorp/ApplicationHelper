@@ -388,6 +388,47 @@ class RegisterController extends XeRegisterController
         return $parts;
     }
 
+    /**
+     * 회원가입시 회원정보 입력 전에 약관 동의를 진행 할 경우 validation 처리
+     *
+     * @param Request $request request
+     *
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function postTermAgree(Request $request)
+    {
+        $terms = $this->termsHandler->fetchRequireEnabled();
+        // 선택된 그룹에 매칭된 약관 id 를 가져온다
+        $group_id = $request->session()->get('select_group_id');
+        $group_config = app('amuz.usertype.config')->get($group_id);
+        if($group_config !== null) {
+            $selected_terms = $group_config->get('selected_terms') ? $group_config->get('selected_terms') : [];
+
+            // 선택 안된 약관은 삭제
+            foreach ($terms as $key => $term) {
+                if (!in_array($term->id, $selected_terms)) {
+                    unset($terms[$key]);
+                }
+            }
+        }
+
+        $rule = [];
+        foreach ($terms as $term) {
+            $rule[$term->id] = 'bail|accepted';
+        }
+
+        $this->validate(
+            $request,
+            $rule,
+            ['*.accepted' => xe_trans('xe::pleaseAcceptRequireTerms')]
+        );
+
+        $request->session()->flash('pass_agree');
+        $request->session()->forget('select_group_id');
+        $request = $request->merge(['select_group_id' => $group_id]);
+
+        return redirect()->route('ahib::user_register', $request->except('_token'));
+    }
 
     /**
      * find account

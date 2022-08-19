@@ -775,6 +775,8 @@ class Controller extends BaseController
                 $deviceInfo = $retObj->get('deviceInfo');
                 $deviceInfo['token'] = $token;
                 $deviceInfo['user_id'] = $user->id;
+
+                $delete = AhUserToken::where('device_id' ,$deviceInfo['device_id'])->delete();
                 $user_token = AhUserToken::firstOrNew(['device_id' => $deviceInfo['device_id'], 'user_id' => $user->id]);
                 foreach($deviceInfo as $key => $val) $user_token->{$key} = $val;
 
