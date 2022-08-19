@@ -498,10 +498,10 @@ class RegisterController extends XeRegisterController
         }
 
         //선택된 그룹에 1번 id가 없을 경우 추가
-        $groups = $this->handler->groups()->query()->where('site_key',\XeSite::getCurrentSiteKey())->get();
-        if(in_array($groups->first()->id, $userData['group_id']) === false) {
-            $userData['group_id'][] = $groups->first()->id;
-        }
+//        $groups = $this->handler->groups()->query()->where('site_key',\XeSite::getCurrentSiteKey())->get();
+//        if(in_array($groups->first()->id, $userData['group_id']) === false) {
+//            $userData['group_id'][] = $groups->first()->id;
+//        }
 
         $userData['account'] = $userAccountData;
 
