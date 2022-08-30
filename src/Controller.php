@@ -327,7 +327,7 @@ class Controller extends BaseController
 
         $credentials = $request->only('email', 'password');
 
-        $credentials['email'] = trim($credentials['email']);
+        $credentials['email'] = strtolower(trim($credentials['email']));
 
         $credentials['status'] = [User::STATUS_ACTIVATED, User::STATUS_PENDING_ADMIN, User::STATUS_PENDING_EMAIL];
 

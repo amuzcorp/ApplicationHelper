@@ -247,6 +247,7 @@ class RegisterController extends XeRegisterController
         // 활성화된 가입폼 가져오기
 
         $userData = $request->except(['_token']);
+        $userData['email'] = strtolower($userData['email']);
 
         // set join group
         $joinGroup = $config->get('joinGroup');
