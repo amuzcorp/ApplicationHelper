@@ -426,6 +426,7 @@ class RegisterController extends XeRegisterController
         $request->session()->flash('pass_agree');
         $request->session()->forget('select_group_id');
         $request = $request->merge(['select_group_id' => $group_id]);
+        $request = $request->merge(['group_id' => $group_id]);
 
         return redirect()->route('ahib::user_register', $request->except('_token'));
     }
