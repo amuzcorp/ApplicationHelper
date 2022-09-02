@@ -70,7 +70,7 @@
                             <div class="xu-form-group xu-form-group--large">
                                 <label class="xu-form-group__label" for="f-email">{{ xe_trans('xe::email') }}</label>
                                 <div class="xu-form-group__box">
-                                    <input type="text" id="f-email" class="xe-form-control xu-form-group__control" placeholder="ep-account@lge.com" name="email" value="{{ old('email') }}" required data-valid-name="이메일">
+                                    <input type="text" id="f-email" class="xe-form-control xu-form-group__control" placeholder="ep-account@lge.com" name="email" value="{{ old('email') }}" required data-valid-name="이메일" style="text-transform: lowercase;">
                                     <p style="padding:0; margin:0; color:red;">반드시 LG전자 EP계정을 입력해야 합니다.</p>
                                 </div>
                             </div>
