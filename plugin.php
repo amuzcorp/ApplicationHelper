@@ -1,6 +1,7 @@
 <?php
 namespace Amuz\XePlugin\ApplicationHelper;
 
+use Carbon\Carbon;
 use Schema;
 use Amuz\XePlugin\ApplicationHelper\Middleware\AmuzApiHelpers;
 use Amuz\XePlugin\ApplicationHelper\Migrations\Migration;
@@ -8,6 +9,8 @@ use Illuminate\Support\Str;
 use Route;
 use Xpressengine\Http\Request;
 use Xpressengine\Plugin\AbstractPlugin;
+use Xpressengine\Plugins\Banner\Models\Group;
+use Xpressengine\Plugins\Banner\Models\Item;
 use Xpressengine\Plugins\SocialLogin\Handler;
 
 class Plugin extends AbstractPlugin
@@ -108,6 +111,7 @@ class Plugin extends AbstractPlugin
                 //get Board Comment Data
                 Route::get('/comment/getItem', ['as' => 'ah::get_comment', 'uses' => 'Amuz\XePlugin\ApplicationHelper\BoardApiController@getItem']);
                 Route::get('/banner/getItem', ['as' => 'application_helper.get.banner.item', 'uses' => 'Amuz\XePlugin\ApplicationHelper\Controller@bannerItemData']);
+                Route::get('/banner/{banner_key}', ['as' => 'ah::banner_list', 'uses' => 'Amuz\XePlugin\ApplicationHelper\Controller@getBanner']);
 
                 //이것은 마치 나의 필살기
                 Route::any('/syncDocuments', [
@@ -124,7 +128,7 @@ class Plugin extends AbstractPlugin
                 Route::get('/auth/user_groups',['as' => 'ah::user_groups','uses' => 'Amuz\XePlugin\ApplicationHelper\Controller@user_groups']);
 
                 Route::any('/auth/update',['as' => 'ah::user_update','uses' => 'Amuz\XePlugin\ApplicationHelper\Controller@userUpdate']);
-        });
+            });
     }
 
     public function settingsRoute(){
@@ -296,22 +300,28 @@ class Plugin extends AbstractPlugin
             if(!$query) return $query;
 
             //배너 아이템문서에 업데이트 발생할 경우 어댑핏 어플리케이션 배너 정보 업데이트
-            $banner_list = app('xe.config')->get('application_helper.app_config')->get('banner_list');
+            $xe_config = app('xe.config');
+            $ah_config = $xe_config->get('application_helper');
+            if($ah_config == null){
+                $xe_config->set('application_helper',[]);
+                $ah_config = $xe_config->get('application_helper');
+            }
+            $ah_banner_groups = $ah_config->get('banner',[]);
 
-            foreach($banner_list as $key => $banner) {
-                if($banner['id'] === $query->id) {
-                    $banner_list[$key]['title'] = $query->title;
-                    $banner_list[$key]['group_id'] = $query->group_id;
-                    $banner_list[$key]['image_path'] = $query->image['path'];
-                    $banner_list[$key]['image_id'] = $query->image['id'];
-                    $banner_list[$key]['content'] = $query->content;
-                    $banner_list[$key]['link'] = $query->link;
-                    $banner_list[$key]['link_target'] = $query->link_target;
-                    $banner_list[$key]['group'] = $query->group;
+            $banner_data = [];
+            foreach($ah_banner_groups as $key => $item) {
+                $banner_config = $ah_banner_groups[$key];
+                $group_id = $banner_config['group'];
+                $group = Group::find($group_id);
+                $banner_items = $this->getItems($group);
+                foreach($banner_items as $banner) {
+                    if($banner->image === "") continue;
+                    $banner->slide_time = (int) $banner_config['slide_time'];
+                    $banner_data[$key][] = $banner->toArray();
                 }
             }
             app('xe.config')->set('application_helper.app_config', [
-                'banner_list' => $banner_list
+                'ah_banner_config' => $banner_data
             ]);
             return $query;
         });
@@ -380,5 +390,28 @@ class Plugin extends AbstractPlugin
         // implement code
 
         return parent::checkUpdated();
+    }
+
+    public function getItems($group, $count = null, $onlyVisible = false)
+    {
+        $query = Item::where('group_id', $group->id);
+
+        if ($onlyVisible) {
+            $query->where('status', 'show')
+                ->where(function ($query) {
+                    $query->where('use_timer', 0)
+                        ->orWhere(function ($query) {
+                            $now = Carbon::now();
+                            $query->where('ended_at', '>', $now);
+                            $query->where('started_at', '<', $now);
+                        });
+                });
+        }
+
+        if ($count !== null) {
+            $query->take($count);
+        }
+
+        return $query->orderBy('order', 'desc')->orderBy('created_at', 'desc')->get();
     }
 }

@@ -20,6 +20,7 @@ use XeDB;
 use App\Http\Controllers\Controller as BaseController;
 use Xpressengine\Keygen\Keygen;
 use Xpressengine\Menu\Models\MenuItem;
+use Xpressengine\Plugins\Banner\Models\Group;
 use Xpressengine\Plugins\Board\ConfigHandler;
 use Xpressengine\Plugins\Board\Models\Board;
 use Xpressengine\Plugins\Board\Services\BoardService;
@@ -33,6 +34,7 @@ use Xpressengine\User\Guard;
 use Xpressengine\User\Models\User;
 use Xpressengine\User\Models\UserGroup;
 use Xpressengine\User\UserHandler;
+use Xpressengine\Plugins\Banner\Handler as BannerHandler;
 
 use Xpressengine\User\Models\User as XeUser;
 
@@ -159,6 +161,35 @@ class Controller extends BaseController
         $retObj->set('site_key',$site_key);
         $retObj->set('menu_list',$menu_list);
 //        dd($retObj);
+        return $retObj->output();
+    }
+
+    public function getBanner(BannerHandler $handler,$banner_key) {
+        $site_key = \XeSite::getCurrentSiteKey();
+        $xe_config = app('xe.config');
+        $ah_config = $xe_config->get('application_helper');
+        if($ah_config == null){
+            $xe_config->set('application_helper',[]);
+            $ah_config = $xe_config->get('application_helper');
+        }
+
+        $ah_banner_groups = $ah_config->get('banner',[]);
+        $banner_config = $ah_banner_groups[$banner_key];
+        $group_id = $banner_config['group'];
+        $group = Group::find($group_id);
+        $banner_items = $handler->getItems($group);
+        $banner_data = [];
+        foreach($banner_items as $banner) {
+            if($banner->image === "") continue;
+            $banner->slide_time = $banner_config['slide_time'];
+            $banner_data[] = $banner->toArray();
+        }
+
+        $retObj = new BaseObject();
+        $retObj->set('site_key',$site_key);
+        $retObj->set('banner_key',$banner_key);
+        $retObj->set('banner_group_id',$group_id);
+        $retObj->set('banner_items',$banner_data);
         return $retObj->output();
     }
 
@@ -419,6 +450,7 @@ class Controller extends BaseController
             $retObj = $this->doLogin($request, $retObj, $user);
             return redirect()->route('ah::closer',['remember_token'=>$retObj->get('remember_token'),'user'=>$retObj->get('user')]);
         }
+
         //가입된 계정이 없을 경우 회원가입
         if (app('xe.config')->getVal('social_login.registerType', 'simple') === 'step' &&
             $socialLoginHandler->checkNeedRegisterForm($userContract) === false) {
@@ -659,7 +691,7 @@ class Controller extends BaseController
                                 $q->orWhere($fieldId . '.boolean',$val);
                             }
                         });
-                    break;
+                        break;
                 }
 
             }
@@ -674,7 +706,6 @@ class Controller extends BaseController
         $count = 0;
 
         $userList = $paginate->getCollection()->keyBy('id');
-
         foreach($userList as $key => $user) $userList[$key] = $this->arrangeUserInfo($user,$request);
         $paginate->setCollection($userList);
 

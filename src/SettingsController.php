@@ -9,8 +9,9 @@ use App\Http\Sections\SkinSection;
 use Illuminate\Support\Str;
 use Xpressengine\Http\Request;
 use Xpressengine\Menu\Models\Menu;
+use Xpressengine\Plugins\Banner\Models\Group;
 use Xpressengine\Routing\InstanceRoute;
-use Xpressengine\Plugins\Banner\Handler;
+use Xpressengine\Plugins\Banner\Handler as BannerHandler;
 
 class SettingsController extends BaseController
 {
@@ -174,20 +175,42 @@ class SettingsController extends BaseController
 
                     $xe_config->setVal('application_helper.'.$type,$options);
                 break;
+            case "banner" :
+                $keys = $request->get('keys');
+                $groups = $request->get('groups');
+                $slide_time = $request->get('slide_time');
+                $bannerGroup = [];
+                foreach($keys as $key => $groupKeyId) {
+                    $bannerGroup[$groupKeyId]  = [
+                        'group' => $groups[$key],
+                        'slide_time' => $slide_time[$key]
+                    ];
+                }
+                $xe_config->setVal('application_helper.'.$type,$bannerGroup);
+
+                break;
         }
 
         return redirect()->back()->with('alert', ['type' => 'success', 'message' => xe_trans('xe::saved')]);
     }
 
-    public function banner_config_index(Handler $handler, Request $request) {
+    public function banner_config_index(BannerHandler $handler, Request $request) {
         $title = '어플리케이션 배너 설정';
         $description = '어플리케이션 배너 설정입니다';
 
         // set browser title
         XeFrontend::title($title);
 
-        $banner_group = $handler->getGroups();
+        $xe_config = app('xe.config');
+        $ah_config = $xe_config->get('application_helper');
+        if($ah_config == null){
+            $xe_config->set('application_helper',[]);
+            $ah_config = $xe_config->get('application_helper');
+        }
+        $ah_banner_groups = $ah_config->get('banner',[]);
+        $groups = app('xe.banner')->getGroups();
 
+        $banner_group = $handler->getGroups();
         $app_config = app('xe.config')->get('application_helper.app_config');
         if(!$app_config->get('groups') || count($app_config->get('groups')) <= 0) {
             $app_config['groups'] = [
@@ -198,68 +221,82 @@ class SettingsController extends BaseController
                 'groups' => $app_config['groups']
             ]);
         }
-        $app_banner_groups = $app_config['groups'];
-
-        $menus = Menu::where('site_key',\XeSite::getCurrentSiteKey())->get();
-        $main_banner = $app_config->get('banner_list');
-        $idx = 0;
-        $str = Str::random(8);
-        foreach($main_banner as $key => $banner_item) {
-            $idx++;
-            $item = $this->setBannerOptions($banner_item);
-
-            if(!isset($item['idx']) || $item['idx'] === '') {
-                $item['idx'] = $str.'_'.$idx;
+//
+//        $menus = Menu::where('site_key',\XeSite::getCurrentSiteKey())->get();
+//        $main_banner = $app_config->get('banner_list');
+//        $idx = 0;
+//        $str = Str::random(8);
+//        foreach($main_banner as $key => $banner_item) {
+//            $idx++;
+//            $item = $this->setBannerOptions($banner_item);
+//
+//            if(!isset($item['idx']) || $item['idx'] === '') {
+//                $item['idx'] = $str.'_'.$idx;
+//            }
+//
+//            if($item === null) {
+//                unset($main_banner[$key]);
+//                continue;
+//            }
+//
+//            $menus = Menu::where('site_key',\XeSite::getCurrentSiteKey())->get();
+//            if(!isset($banner_item['menu'])) $item['menu'] = $menus[0]->id;
+//            else if($banner_item['menu'] === '') $item['menu'] = $menus[0]->id;
+//            else $item['menu'] = $banner_item['menu'];
+//            $main_banner[$key] = $item;
+//        }
+//
+//        $sortArr = array();
+//        foreach($main_banner as $res) $sortArr [] = $res['menu'];
+//        array_multisort($sortArr , SORT_ASC, $main_banner);
+//
+//        $content_banner = $app_config->get('content_banner_list');
+//        foreach($content_banner as $key => $banner_item) {
+//            $item = $this->setBannerOptions($banner_item);
+//            $idx++;
+//
+//            if($item === null) {
+//                unset($content_banner[$key]);
+//                continue;
+//            }
+//
+//            if(!isset($item['idx'])) {
+//                $item['idx'] = $str.'_'.$idx;
+//            }
+//
+//            $menus = Menu::where('site_key',\XeSite::getCurrentSiteKey())->get();
+//            if(!isset($banner_item['menu'])) $item['menu'] = $menus[0]->id;
+//            else if($banner_item['menu'] === '') $item['menu'] = $menus[0]->id;
+//            else $item['menu'] = $banner_item['menu'];
+//            $content_banner[$key] = $item;
+//        }
+//        $sortArr = array();
+//        foreach($content_banner as $res) $sortArr [] = $res['menu'];
+//        array_multisort($sortArr , SORT_ASC, $content_banner);
+        $banner_data = [];
+        foreach($ah_banner_groups as $key => $item) {
+            $banner_config = $ah_banner_groups[$key];
+            $group_id = $banner_config['group'];
+            $group = Group::find($group_id);
+            $banner_items = $handler->getItems($group);
+            foreach($banner_items as $banner) {
+                if($banner->image === "") continue;
+                $banner->slide_time = (int) $banner_config['slide_time'];
+                $banner_data[$key][] = $banner->toArray();
             }
-
-            if($item === null) {
-                unset($main_banner[$key]);
-                continue;
-            }
-
-            $menus = Menu::where('site_key',\XeSite::getCurrentSiteKey())->get();
-            if(!isset($banner_item['menu'])) $item['menu'] = $menus[0]->id;
-            else if($banner_item['menu'] === '') $item['menu'] = $menus[0]->id;
-            else $item['menu'] = $banner_item['menu'];
-            $main_banner[$key] = $item;
         }
-
-        $sortArr = array();
-        foreach($main_banner as $res) $sortArr [] = $res['menu'];
-        array_multisort($sortArr , SORT_ASC, $main_banner);
-
-        $content_banner = $app_config->get('content_banner_list');
-        foreach($content_banner as $key => $banner_item) {
-            $item = $this->setBannerOptions($banner_item);
-            $idx++;
-
-            if($item === null) {
-                unset($content_banner[$key]);
-                continue;
-            }
-
-            if(!isset($item['idx'])) {
-                $item['idx'] = $str.'_'.$idx;
-            }
-
-            $menus = Menu::where('site_key',\XeSite::getCurrentSiteKey())->get();
-            if(!isset($banner_item['menu'])) $item['menu'] = $menus[0]->id;
-            else if($banner_item['menu'] === '') $item['menu'] = $menus[0]->id;
-            else $item['menu'] = $banner_item['menu'];
-            $content_banner[$key] = $item;
-        }
-        $sortArr = array();
-        foreach($content_banner as $res) $sortArr [] = $res['menu'];
-        array_multisort($sortArr , SORT_ASC, $content_banner);
-
         app('xe.config')->set('application_helper.app_config', [
-            'banner_list' => $main_banner,
-            'content_banner_list' => $content_banner
+            'ah_banner_config' => $banner_data
         ]);
+
+//        dd(app('xe.config')->get('application_helper.app_config'));
 
         // output
         return XePresenter::make('ApplicationHelper::views.settings.banner.index',
-            compact('title', 'description', 'banner_group', 'app_config', 'main_banner', 'content_banner', 'app_banner_groups', 'menus', 'str'));
+            compact('title', 'description', 'banner_group', 'groups', 'ah_banner_groups'));
+        return XePresenter::make('ApplicationHelper::views.settings.banner.index',
+            compact('title', 'description', 'banner_group', 'groups', 'ah_banner_groups',
+                'app_config', 'main_banner', 'content_banner', 'app_banner_groups', 'menus', 'str'));
     }
 
     public function config_update(Request $request) {
