@@ -1,10 +1,37 @@
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,minimum-scale=1.0,user-scalable=no">
 {{ XeFrontend::css('assets/core/xe-ui/css/xe-ui-without-base.css')->load() }}
 {{ XeFrontend::js('assets/core/user/user_register.js')->load() }}
-
+<style>
+    .user ul, .user h1, .user form, .user fieldset, .user .hr .text-hr, .user .auth-text {
+        display: contents !important;
+    }
+    .xu-button--primary {
+        background-color: #FF9933;
+    }
+    .xu-button--primary:focus:not([disabled]), .xu-button--primary.xu-button--focus:not([disabled]) {
+        background-color: #e38527 !important;
+        border-color: #e38527 !important;
+    }
+    ..xu-label-checkradio:hover input[type="checkbox"]:checked + .xu-label-checkradio__helper, .xu-label-checkradio.xu-label-checkradio--hover input[type="checkbox"]:checked + .xu-label-checkradio__helper {
+        background-color: #e38527 !important;
+        border-color: #e38527 !important;
+    }
+    .xu-button--primary:hover:not([disabled]), .xu-button--primary.xu-button--hover:not([disabled]) {
+        background-color: #e38527 !important;
+        border-color: #e38527 !important;
+    }
+    .xu-label-checkradio input[type="checkbox"]:checked + .xu-label-checkradio__helper {
+        background-color: #e38527 !important;
+        border-color: #e38527 !important;
+    }
+    .xu-label-checkradio:hover input[type="checkbox"] + .xu-label-checkradio__helper, .xu-label-checkradio.xu-label-checkradio--hover input[type="checkbox"] + .xu-label-checkradio__helper {
+        border-color: #e38527 !important;
+    }
+</style>
 <div class="user user--signup user--terms">
     <h2 class="user__title">{{ xe_trans('xe::signUp') }}</h2>
     <p class="user__text">{!! nl2br(app('xe.config')->getVal('user.register.register_guide')) !!}</p>
-    <form method="post" action="{{ route('auth.register.term_agree') }}">
+    <form method="post" action="{{ route('ahib::term_agree') }}">
         {!! csrf_field() !!}
 
         <fieldset class="__xe-register-aggrements">

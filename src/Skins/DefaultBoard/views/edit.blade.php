@@ -1,3 +1,52 @@
+<meta name="viewport" content="initial-scale=1.0, width=device-width">
+
+@if(app('request')->isMobile())
+    <style>
+        .paymentButton {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            left: 0;
+            border: none;
+            background: #FF9933;
+            color: #ffffff;
+            padding: 17px;
+            font-size: 26px;
+            font-weight: 500;
+        }
+        .pad-top-20 {
+            padding-top:20px !important;
+        }
+        #xeContentEditor {
+            min-height:300px !important;
+        }
+        .write_form_option {
+            margin-bottom: 60px !important;
+        }
+        .write_footer {
+            padding-bottom: 16px !important;
+        }
+        .write_footer .write_form_btn .btn_submit {
+            background-color: #FF9933;
+            border-color: #FF9933;
+        }
+        .write_footer .write_form_btn .btn_submit:focus {
+            background-color: #e38527;
+            border-color: #e38527;
+        }
+        .write_footer .write_form_btn .btn_submit:hover {
+            background-color: #e38527;
+            border-color: #e38527;
+        }
+        .xe-label>input[type="checkbox"]:hover+.xe-input-helper, .xe-label>input[type="radio"]:hover+.xe-input-helper {
+            border-color: #FF9933;
+        }
+        .xe-label>input[type="checkbox"]:checked+.xe-input-helper {
+            background-color: #FF9933;
+        }
+    </style>
+@endif
+
 {{ XeFrontend::rule('board', $rules) }}
 
 {{ XeFrontend::js('assets/core/common/js/draft.js')->appendTo('head')->load() }}
@@ -116,18 +165,22 @@
                 </div>
             </div>
             <div class="write_form_btn @if (Auth::check() === false) nologin @endif">
-                <span class="xe-btn-group">
-                    <button type="button" class="xe-btn xe-btn-secondary btn_temp_save __xe_temp_btn_save">{{ xe_trans('xe::draftSave') }}</button>
-                    <button type="button" class="xe-btn xe-btn-secondary xe-dropdown-toggle" data-toggle="xe-dropdown" aria-haspopup="true" aria-expanded="false">
-                        <span class="caret"></span>
-                        <span class="xe-sr-only">Toggle Dropdown</span>
-                    </button>
-                    <ul class="xe-dropdown-menu">
-                        <li><a href="#" class="__xe_temp_btn_load">{{ xe_trans('xe::draftLoad') }}</a></li>
-                    </ul>
-                </span>
-                <button type="button" class="xe-btn xe-btn-normal bd_btn btn_preview __xe_btn_preview">{{ xe_trans('xe::preview') }}</button>
-                <button type="submit" class="xe-btn xe-btn-primary bd_btn btn_submit __xe_btn_submit">{{ xe_trans('xe::submit') }}</button>
+                @if(!app('request')->isMobile())
+                    <span class="xe-btn-group">
+                        <button type="button" class="xe-btn xe-btn-secondary btn_temp_save __xe_temp_btn_save">{{ xe_trans('xe::draftSave') }}</button>
+                        <button type="button" class="xe-btn xe-btn-secondary xe-dropdown-toggle" data-toggle="xe-dropdown" aria-haspopup="true" aria-expanded="false">
+                            <span class="caret"></span>
+                            <span class="xe-sr-only">Toggle Dropdown</span>
+                        </button>
+                        <ul class="xe-dropdown-menu">
+                            <li><a href="#" class="__xe_temp_btn_load">{{ xe_trans('xe::draftLoad') }}</a></li>
+                        </ul>
+                    </span>
+                    <button type="button" class="xe-btn xe-btn-normal bd_btn btn_preview __xe_btn_preview">{{ xe_trans('xe::preview') }}</button>
+                    <button type="submit" class="xe-btn xe-btn-primary bd_btn btn_submit __xe_btn_submit">{{ xe_trans('xe::submit') }}</button>
+                @else
+                    <button type="submit" class="xe-btn xe-btn-primary bd_btn btn_submit __xe_btn_submit paymentButton">{{ xe_trans('xe::submit') }}</button>
+                @endif
             </div>
         </div>
     </form>

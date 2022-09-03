@@ -275,7 +275,8 @@ class RegisterController extends XeRegisterController
                     $requireTerms = app('xe.terms')->fetchRequireEnabled();
                     $termAgreeType = app('xe.config')->getVal('user.register.term_agree_type');
 
-                    if ($requireTerms->count() > 0 && $termAgreeType !== UserRegisterHandler::TERM_AGREE_NOT) {
+                    // UserRegisterHandler::TERM_AGREE_PRE = 회원약관 동의가 회원정보 입력전에 출력 될 경우
+                    if ($requireTerms->count() > 0 && $termAgreeType !== UserRegisterHandler::TERM_AGREE_PRE) {
                         $requireTermValidator = Validator::make(
                             $request->all(),
                             [],
@@ -309,6 +310,9 @@ class RegisterController extends XeRegisterController
                 $user = $this->registerUser($request->except(['_token']));
                 $userData['id'] = $user->id;    // 생성된 user id
                 app('amuz.usertype.handler')->insertDf($userData);  // 회원 그룹별 확장 필드 저장
+                if(isset($request->profile_img_id) && $request->profile_img_id !== '' && $request->profile_img_id) {
+                    \XeDB::table('user')->where('id', $user->id)->update(['profile_image_id' => $request->profile_img_id]);
+                };
             } catch (ExistsAccountException $e) {
                 XeDB::rollback();
                 $this->throwHttpException(xe_trans('user_types::alreadyRegisteredAccount'), 409, $e);
@@ -331,6 +335,9 @@ class RegisterController extends XeRegisterController
                 $user = $this->handler->create($userData);
                 $userData['id'] = $user->id;    // 생성된 user id
                 app('amuz.usertype.handler')->insertDf($userData);  // 회원 그룹별 확장 필드 저장
+                if(isset($request->profile_img_id) && $request->profile_img_id !== '' && $request->profile_img_id) {
+                    \XeDB::table('user')->where('id', $user->id)->update(['profile_image_id' => $request->profile_img_id]);
+                };
             } catch (\Exception $e) {
                 XeDB::rollback();
                 throw $e;
@@ -381,6 +388,48 @@ class RegisterController extends XeRegisterController
         return $parts;
     }
 
+    /**
+     * 회원가입시 회원정보 입력 전에 약관 동의를 진행 할 경우 validation 처리
+     *
+     * @param Request $request request
+     *
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function postTermAgree(Request $request)
+    {
+        $terms = $this->termsHandler->fetchRequireEnabled();
+        // 선택된 그룹에 매칭된 약관 id 를 가져온다
+        $group_id = $request->session()->get('select_group_id');
+        $group_config = app('amuz.usertype.config')->get($group_id);
+        if($group_config !== null) {
+            $selected_terms = $group_config->get('selected_terms') ? $group_config->get('selected_terms') : [];
+
+            // 선택 안된 약관은 삭제
+            foreach ($terms as $key => $term) {
+                if (!in_array($term->id, $selected_terms)) {
+                    unset($terms[$key]);
+                }
+            }
+        }
+
+        $rule = [];
+        foreach ($terms as $term) {
+            $rule[$term->id] = 'bail|accepted';
+        }
+
+        $this->validate(
+            $request,
+            $rule,
+            ['*.accepted' => xe_trans('xe::pleaseAcceptRequireTerms')]
+        );
+
+        $request->session()->flash('pass_agree');
+        $request->session()->forget('select_group_id');
+        $request = $request->merge(['select_group_id' => $group_id]);
+        $request = $request->merge(['group_id' => $group_id]);
+
+        return redirect()->route('ahib::user_register', $request->except('_token'));
+    }
 
     /**
      * find account
@@ -450,10 +499,10 @@ class RegisterController extends XeRegisterController
         }
 
         //선택된 그룹에 1번 id가 없을 경우 추가
-        $groups = $this->handler->groups()->query()->where('site_key',\XeSite::getCurrentSiteKey())->get();
-        if(in_array($groups->first()->id, $userData['group_id']) === false) {
-            $userData['group_id'][] = $groups->first()->id;
-        }
+//        $groups = $this->handler->groups()->query()->where('site_key',\XeSite::getCurrentSiteKey())->get();
+//        if(in_array($groups->first()->id, $userData['group_id']) === false) {
+//            $userData['group_id'][] = $groups->first()->id;
+//        }
 
         $userData['account'] = $userAccountData;
 

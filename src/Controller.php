@@ -337,25 +337,37 @@ class Controller extends BaseController
                     ->setExpiresIn(Arr::get($authedToken, 'access_token_expires_at'));
                 break;
             case "apple" :
-				$savedAppleInfo = AhUserAppleInfo::find($authedUser["user_id"]);
-				if($savedAppleInfo !== null){
-					$authedUser = (array) json_dec($savedAppleInfo->user);
-				}else{
-					$savedAppleInfo = new AhUserAppleInfo();
-					$savedAppleInfo->id = $authedUser["user_id"];
-					$savedAppleInfo->user = json_enc($authedUser);
-					$savedAppleInfo->save();
-				}
+                $savedAppleInfo = AhUserAppleInfo::find($authedUser["user_id"]);
+                if($savedAppleInfo !== null){
+                    $savedAppleInfo->user = json_enc($authedUser);
+                    $savedAppleInfo->save();
+                }else{
+                    $savedAppleInfo = new AhUserAppleInfo();
+                    $savedAppleInfo->id = $authedUser["user_id"];
+                    $savedAppleInfo->user = json_enc($authedUser);
+                    $savedAppleInfo->save();
+                }
 
                 $providerInstance = $socialite->driver($provider);
                 $providerInstance->stateless();
 
-                if (array_key_exists("name", $authedUser) || array_key_exists("name", $authedUser)) {
-                    $user["name"] = $authedUser["name"];
+                if (array_key_exists("firstName", $authedUser) && array_key_exists("lastName", $authedUser)) {
+                    $firstName = $authedUser["firstName"];
+                    $lastName = $authedUser["lastName"];
                     $fullName = trim(
-                        ($user["name"]['firstName'] ?? "")
+                        ($firstName ?? "")
                         . " "
-                        . ($user["name"]['lastName'] ?? "")
+                        . ($lastName ?? "")
+                    );
+                } else if(array_key_exists("firstName", $authedUser)) {
+                    $firstName = $authedUser["firstName"];
+                    $fullName = trim(
+                        ($firstName ?? "")
+                    );
+                } else if(array_key_exists("lastName", $authedUser)) {
+                    $lastName = $authedUser["lastName"];
+                    $fullName = trim(
+                        ($lastName ?? "")
                     );
                 }
 
@@ -367,6 +379,16 @@ class Controller extends BaseController
                         "email" => $authedUser["email"] ?? null,
                     ]);
 
+                $userContract->setToken(Arr::get($authedToken, 'access_token'));
+                break;
+            case "google" :
+                $userContract = (new \Laravel\Socialite\Two\User())->setRaw($authedUser)->map([
+                    'id'        => $authedUser['id'],
+                    'nickname'  => Arr::get($authedUser, 'displayName'),
+                    'name'      => Arr::get($authedUser, 'displayName'),
+                    'email'     => Arr::get($authedUser, 'email'),
+                    'avatar'    => Arr::get($authedUser, 'photoUrl'),
+                ]);
                 $userContract->setToken(Arr::get($authedToken, 'access_token'));
                 break;
         }
@@ -548,7 +570,8 @@ class Controller extends BaseController
                     if(!isset($result[$taxonomyItem->slug])) $result[$taxonomyItem->slug] = [];
                     $result[$taxonomyItem->slug][] = array_merge((array)$taxonomyItem,$archive->items[$taxonomyItem->id]);
                 }
-                $document->selectedTaxonomyItems = json_encode($result);
+//                $document->selectedTaxonomyItems = json_encode($result);
+                $document->selectedTaxonomies = json_encode($result);
                 //fortest
 //                unset($document->content,$document->pure_content);
             }
@@ -752,6 +775,8 @@ class Controller extends BaseController
                 $deviceInfo = $retObj->get('deviceInfo');
                 $deviceInfo['token'] = $token;
                 $deviceInfo['user_id'] = $user->id;
+
+                $delete = AhUserToken::where('device_id' ,$deviceInfo['device_id'])->delete();
                 $user_token = AhUserToken::firstOrNew(['device_id' => $deviceInfo['device_id'], 'user_id' => $user->id]);
                 foreach($deviceInfo as $key => $val) $user_token->{$key} = $val;
 
