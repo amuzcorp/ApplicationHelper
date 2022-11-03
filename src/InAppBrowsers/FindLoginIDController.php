@@ -54,6 +54,7 @@ class FindLoginIDController extends Controller {
     {
         $this->auth = $auth;
         $this->handler = app('xe.user');
+        app('auth')->logout();
 
         XeTheme::selectBlankTheme();
         XePresenter::setSkinTargetId('ahib/user/auth');
@@ -66,8 +67,14 @@ class FindLoginIDController extends Controller {
      *
      * @return \Xpressengine\Presenter\Presentable
      */
-    public function getFindLoginID()
+    public function getFindLoginID(Request $request)
     {
+        if(app('auth')->check()) {
+            app('auth')->logout();
+        }
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
         return XePresenter::make('find_login_id');
     }
 

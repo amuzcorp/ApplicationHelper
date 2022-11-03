@@ -55,6 +55,12 @@ class RegisterController extends XeRegisterController
 //
     public function getRegister(Request $request,$group_id = null)
     {
+        if($this->auth->check()) {
+            $this->auth->logout();
+        }
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
         $pluginHandler = app('xe.plugin');
         $user_types = $pluginHandler->getPlugin('user_types');
         if (!$user_types || $user_types->getStatus() != 'activated') {

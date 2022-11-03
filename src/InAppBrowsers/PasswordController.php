@@ -65,6 +65,7 @@ class PasswordController extends Controller {
         $this->auth = $auth;
         $this->passwords = $passwords;
         $this->handler = app('xe.user');
+        app('auth')->logout();
 
         XeTheme::selectBlankTheme();
         XePresenter::setSkinTargetId('ahib/user/auth');
@@ -77,8 +78,14 @@ class PasswordController extends Controller {
      *
      * @return \Xpressengine\Presenter\Presentable
      */
-    public function getReset()
+    public function getReset(Request $request)
     {
+        if(app('auth')->check()) {
+            app('auth')->logout();
+        }
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
         $email = Session::get('email');
 
         return XePresenter::make('reset', compact('email'));

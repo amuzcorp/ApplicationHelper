@@ -1,6 +1,7 @@
 <?php
 namespace Amuz\XePlugin\ApplicationHelper;
 
+use Amuz\XePlugin\Adapfit\Models\AdapfitUserBlock;
 use Illuminate\Http\Request;
 use XeFrontend;
 use XePresenter;
@@ -17,6 +18,7 @@ class BoardApiController extends BaseController
 
         $instanceId = $request->get('instanceId');
         $page = $request->get('page') ?: 1;
+        $blocked = $request->get('blocked' , 'N');
 
         $plugin = app('xe.plugin.comment');
         $handler = $plugin->getHandler();
@@ -39,6 +41,16 @@ class BoardApiController extends BaseController
             })->with('target')->orderBy('head', 'desc')
             ->orderBy('created_at', 'asc')
             ->where('display', '!=', Comment::DISPLAY_HIDDEN);
+
+        if($blocked === 'Y') {
+            $user_id = $request->get('login_id', '');
+            if($user_id === '') return $query;
+
+            $target_list = AdapfitUserBlock::where('user_id', $user_id)->pluck('target_user_id');
+            if(count($target_list->toArray()) > 0) {
+                $query->whereNotIn('user_id', $target_list);
+            }
+        }
 
         $comments = $query->get();
 
