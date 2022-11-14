@@ -58,8 +58,13 @@ class RegisterController extends XeRegisterController
         if($this->auth->check()) {
             $this->auth->logout();
         }
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
+
+        if($request->session()->has('userContract') === false) {
+            if(\Auth::check()) {
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
+            }
+        }
 
         $pluginHandler = app('xe.plugin');
         $user_types = $pluginHandler->getPlugin('user_types');

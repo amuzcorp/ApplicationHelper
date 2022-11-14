@@ -311,6 +311,10 @@ class Controller extends BaseController
     }
 
     public function socialLogin(Request $request,Handler $socialLoginHandler,Socialite $socialite, $provider){
+        //로그인 세션 있을 경우 제거
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
         $retObj = $this->checkDeviceConnect($request);
 
         $requestHeader = base64_decode($request->header('postData'));
