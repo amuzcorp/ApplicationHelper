@@ -312,8 +312,8 @@ class Controller extends BaseController
 
     public function socialLogin(Request $request,Handler $socialLoginHandler,Socialite $socialite, $provider){
         //로그인 세션 있을 경우 제거
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
+//        $request->session()->invalidate();
+//        $request->session()->regenerateToken();
 
         $retObj = $this->checkDeviceConnect($request);
 
@@ -343,8 +343,7 @@ class Controller extends BaseController
             case "apple" :
                 $savedAppleInfo = AhUserAppleInfo::find($authedUser["user_id"]);
                 if($savedAppleInfo !== null){
-                    $savedAppleInfo->user = json_enc($authedUser);
-                    $savedAppleInfo->save();
+                    $authedUser = (array) json_dec($savedAppleInfo->user);
                 }else{
                     $savedAppleInfo = new AhUserAppleInfo();
                     $savedAppleInfo->id = $authedUser["user_id"];
@@ -355,23 +354,32 @@ class Controller extends BaseController
                 $providerInstance = $socialite->driver($provider);
                 $providerInstance->stateless();
 
-                if (array_key_exists("firstName", $authedUser) && array_key_exists("lastName", $authedUser)) {
-                    $firstName = $authedUser["firstName"];
-                    $lastName = $authedUser["lastName"];
+                //구버전 코드 이상없으면 삭제
+//                if (array_key_exists("firstName", $authedUser) && array_key_exists("lastName", $authedUser)) {
+//                    $firstName = $authedUser["firstName"];
+//                    $lastName = $authedUser["lastName"];
+//                    $fullName = trim(
+//                        ($firstName ?? "")
+//                        . " "
+//                        . ($lastName ?? "")
+//                    );
+//                } else if(array_key_exists("firstName", $authedUser)) {
+//                    $firstName = $authedUser["firstName"];
+//                    $fullName = trim(
+//                        ($firstName ?? "")
+//                    );
+//                } else if(array_key_exists("lastName", $authedUser)) {
+//                    $lastName = $authedUser["lastName"];
+//                    $fullName = trim(
+//                        ($lastName ?? "")
+//                    );
+//                }
+                if (array_key_exists("name", $authedUser) || array_key_exists("name", $authedUser)) {
+                    $user["name"] = $authedUser["name"];
                     $fullName = trim(
-                        ($firstName ?? "")
+                        ($user["name"]['firstName'] ?? "")
                         . " "
-                        . ($lastName ?? "")
-                    );
-                } else if(array_key_exists("firstName", $authedUser)) {
-                    $firstName = $authedUser["firstName"];
-                    $fullName = trim(
-                        ($firstName ?? "")
-                    );
-                } else if(array_key_exists("lastName", $authedUser)) {
-                    $lastName = $authedUser["lastName"];
-                    $fullName = trim(
-                        ($lastName ?? "")
+                        . ($user["name"]['lastName'] ?? "")
                     );
                 }
 

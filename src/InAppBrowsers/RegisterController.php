@@ -47,7 +47,7 @@ class RegisterController extends XeRegisterController
     public function __construct()
     {
         parent::__construct();
-        $this->auth->logout();
+//        $this->auth->logout();
 
         XeTheme::selectBlankTheme();
         XePresenter::setSkinTargetId('ahib/user/auth');
@@ -55,16 +55,12 @@ class RegisterController extends XeRegisterController
 //
     public function getRegister(Request $request,$group_id = null)
     {
-        if($this->auth->check()) {
-            $this->auth->logout();
-        }
-
-        if($request->session()->has('userContract') === false) {
-            if(\Auth::check()) {
-                $request->session()->invalidate();
-                $request->session()->regenerateToken();
-            }
-        }
+//        if($request->session()->has('userContract') === false) {
+//            if(\Auth::check()) {
+//                $request->session()->invalidate();
+//                $request->session()->regenerateToken();
+//            }
+//        }
 
         $pluginHandler = app('xe.plugin');
         $user_types = $pluginHandler->getPlugin('user_types');
