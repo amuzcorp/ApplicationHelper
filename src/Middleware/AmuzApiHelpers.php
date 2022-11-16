@@ -29,6 +29,10 @@ class AmuzApiHelpers
 //                    return $retObj->output();
                 }else{
                     $auth->login($user);
+
+                    if(\Schema::hasTable('sendbird_user_token')) {
+                        $this->updateSendbirdToken($token);
+                    }
                 }
 //            }else{
 //                $retObj = new BaseObject();
@@ -37,5 +41,20 @@ class AmuzApiHelpers
             }
         }
         return $next($request);
+    }
+
+    private function updateSendbirdToken($tokenInfo){
+        //토큰이 있으면
+        if($tokenInfo->push_token == '' || $tokenInfo->push_token == null) return;
+
+        // 필요한 플러그인이 활성화 되어있는지 검사한다.
+        $pluginHandler = app('xe.plugin');
+        $sendbirdChat = $pluginHandler->getPlugin('sendbird_chat');
+        if (!$sendbirdChat || $sendbirdChat->getStatus() != 'activated') return;
+
+        $tokenType = "gcm";
+        if(str_starts_with($tokenInfo->device_name,"iPhone") || str_starts_with($tokenInfo->device_name,"iPad")) $tokenType = "apns";
+        app('amuz.sendbird.chat')->updateUserPushToken($tokenInfo->user_id,$tokenType,$tokenInfo->push_token);
+        if(\Schema::hasTable('sendbird_user_token')) app('amuz.sendbird.chat')->syncUserData($tokenInfo->user_id);
     }
 }

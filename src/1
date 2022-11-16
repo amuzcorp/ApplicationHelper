@@ -403,16 +403,6 @@ class Controller extends BaseController
 
                 $userContract->setToken(Arr::get($authedToken, 'access_token'));
                 break;
-            case "google" :
-                $userContract = (new \Laravel\Socialite\Two\User())->setRaw($authedUser)->map([
-                    'id'        => $authedUser['id'],
-                    'nickname'  => Arr::get($authedUser, 'displayName'),
-                    'name'      => Arr::get($authedUser, 'displayName'),
-                    'email'     => Arr::get($authedUser, 'email'),
-                    'avatar'    => Arr::get($authedUser, 'photoUrl'),
-                ]);
-                $userContract->setToken(Arr::get($authedToken, 'access_token'));
-                break;
         }
 
         if (app('xe.config')->getVal('user.register.joinable') === false) {
@@ -665,10 +655,9 @@ class Controller extends BaseController
         if($request->get('search_taxonomy','') != ''){
             //{allow_category_item_item_id: [313, 312, 311, 309, 351, 349], current_status_item_id: [], gender_boolean: []}
             $searchTargets = json_dec($request->get('search_taxonomy','[]'));
-            $booleanTable = 'field_xpressengine_boolean';
             foreach($searchTargets as $fieldId => $fieldInfo){
                 $fieldType = $fieldInfo[0];
-                $selectedValues = $fieldInfo[1];
+		$selectedValues = $fieldInfo[1];
                 switch($fieldType){
                     case "category" :
                         foreach($selectedValues as $val){
@@ -676,21 +665,13 @@ class Controller extends BaseController
                         }
                         break;
                     case "boolean" :
-                        foreach($selectedValues as $val) {
-                            $table_name = 'boolean_'.$fieldId;
-                            $query->join($booleanTable . ' as ' . $table_name, function ($join) use ($table_name, $fieldId, $val) {
-                                $join->on('user.id', '=', $table_name.'.target_id')->
-                                where($table_name.'.field_id', $fieldId)->
-                                where($table_name.'.boolean', $val);
-                            });
-                        }
-//                        $query->where(function($q) use ($fieldId,$selectedValues){
-//                            foreach($selectedValues as $val){
-//                                $q->orWhere($fieldId . '.boolean',$val);
-//                            }
-//                        });
+                        $query->where(function($q) use ($fieldId,$selectedValues){
+                            foreach($selectedValues as $val){
+                                $q->orWhere($fieldId . '.boolean',$val);
+                            }
+                        });
                         break;
-                }
+		}
 
             }
         }
@@ -698,7 +679,8 @@ class Controller extends BaseController
         $query->with('groups');
         $this->makeOrder($query, $request);
 
-        $paginate = $query->paginate($perPage, ['*'], 'page', $page);
+	$paginate = $query->paginate($perPage, ['*'], 'page', $page);
+	dd($paginate);
         $total = $paginate->total();
         $currentPage = $paginate->currentPage();
         $count = 0;
@@ -901,22 +883,8 @@ class Controller extends BaseController
                 $comment_list = Target::whereIn('target_id', $contract_details)->pluck('doc_id');
                 $sum_total = 0;
                 $comment_count = 0;
-
-                $check = \XeDB::table('field_xpressengine_number')->
-                leftjoin('documents', 'field_xpressengine_number.target_id', 'documents.id')->
-                where('field_xpressengine_number.num', '>', 0)->
-                where('documents.user_id', '!=', $user->id)->
-                where('documents.status', 30)->
-                whereIn('field_xpressengine_number.target_id', $comment_list)->first();
-
-                if($check) {
-                    $comments = \XeDB::table('field_xpressengine_number')->
-                    leftjoin('documents', 'field_xpressengine_number.target_id', 'documents.id')->
-                    where('field_xpressengine_number.num', '>', 0)->
-                    where('documents.user_id', '!=', $user->id)->
-                    where('documents.status', 30)->
-                    whereIn('field_xpressengine_number.target_id', $comment_list)->get();
-
+                if(\XeDB::table('field_xpressengine_number')->whereIn('target_id', $comment_list)->first()) {
+                    $comments = \XeDB::table('field_xpressengine_number')->whereIn('target_id', $comment_list)->get();
                     $sum_total = $comments->sum('num');
                     $comment_count = $comments->count();
                 }
@@ -944,13 +912,6 @@ class Controller extends BaseController
                 $user->designer_contract_count = $listCount;
             }
         }
-
-        //노쇼 신고당한 횟수
-        $user->addVisible("no_show_count");
-        $user->no_show_count = 0;
-
-        if(XeUsers::where('id', $user->id)->first()->hasDocument('target_user')->where('instance_id', 'cb05daaf')->first())
-            $user->no_show_count = XeUsers::where('id', $user->id)->first()->hasDocument('target_user')->where('instance_id', 'cb05daaf')->count();
 
         if(Schema::hasTable('sendbird_user_token')){
             $sendBirdChatApp = app('amuz.sendbird.chat');
