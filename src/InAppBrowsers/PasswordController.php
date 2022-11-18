@@ -82,9 +82,9 @@ class PasswordController extends Controller {
     {
         if(app('auth')->check()) {
             app('auth')->logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
         }
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
 
         $email = Session::get('email');
 
