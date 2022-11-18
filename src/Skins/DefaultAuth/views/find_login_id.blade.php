@@ -2,7 +2,7 @@
 {{ XeFrontend::js('plugins/adapfit/src/DynamicFieldSkins/TextMobileSkin/assets/jquery.mask.js')->load() }}
 
 <div class="user user--signup-complete">
-    @if(Session::get('status') !== 'login_id.sent')
+    @if(Session::pull('status') !== 'login_id.sent')
         <h2 class="user__title">아이디를 잊었습니까?</h2>
         <p class="user__text">회원가입시 등록한 개인정보를 입력해주세요.<br/>로그인 아이디, 이메일 주소를 찾을 수 있습니다.</p>
 
@@ -72,7 +72,7 @@
         <div class="user find-password text-center">
             <h2 class="user__title">계정정보를 확인해주세요</h2>
             @php
-                $result = Session::get('result');
+                $result = Session::pull('result');
             @endphp
             {{--            <p class="user__text">{!! xe_trans('xe::checkFindPasswordEmailDescription', ['email' => sprintf('<em>%s</em>', $email)]) !!}</p>--}}
             <em class="info-title mb-4">총 <span style="color:#00a9d4">{{count($result)}}</span>개</em>

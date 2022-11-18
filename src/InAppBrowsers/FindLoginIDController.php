@@ -71,9 +71,9 @@ class FindLoginIDController extends Controller {
     {
         if(app('auth')->check()) {
             app('auth')->logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
         }
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
 
         return XePresenter::make('find_login_id');
     }
@@ -106,6 +106,9 @@ class FindLoginIDController extends Controller {
         if(count($result) == 0) {
             return redirect()->back()->with('alert', ['type' => 'danger', 'message' => '입력한 정보와 일치하는 회원이 없습니다.']);
         }
+
+        $request->session()->put('status', 'login_id.sent');
+        $request->session()->put('result', $result);
 
         return redirect()->back()->with('status', 'login_id.sent')->with('result', $result);
     }
