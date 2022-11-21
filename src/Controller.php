@@ -355,33 +355,33 @@ class Controller extends BaseController
                 $providerInstance->stateless();
 
                 //구버전 코드 이상없으면 삭제
-//                if (array_key_exists("firstName", $authedUser) && array_key_exists("lastName", $authedUser)) {
-//                    $firstName = $authedUser["firstName"];
-//                    $lastName = $authedUser["lastName"];
-//                    $fullName = trim(
-//                        ($firstName ?? "")
-//                        . " "
-//                        . ($lastName ?? "")
-//                    );
-//                } else if(array_key_exists("firstName", $authedUser)) {
-//                    $firstName = $authedUser["firstName"];
-//                    $fullName = trim(
-//                        ($firstName ?? "")
-//                    );
-//                } else if(array_key_exists("lastName", $authedUser)) {
-//                    $lastName = $authedUser["lastName"];
-//                    $fullName = trim(
-//                        ($lastName ?? "")
-//                    );
-//                }
-                if (array_key_exists("name", $authedUser) || array_key_exists("name", $authedUser)) {
-                    $user["name"] = $authedUser["name"];
+                if (array_key_exists("firstName", $authedUser) && array_key_exists("lastName", $authedUser)) {
+                    $firstName = $authedUser["firstName"];
+                    $lastName = $authedUser["lastName"];
                     $fullName = trim(
-                        ($user["name"]['firstName'] ?? "")
+                        ($firstName ?? "")
                         . " "
-                        . ($user["name"]['lastName'] ?? "")
+                        . ($lastName ?? "")
+                    );
+                } else if(array_key_exists("firstName", $authedUser)) {
+                    $firstName = $authedUser["firstName"];
+                    $fullName = trim(
+                        ($firstName ?? "")
+                    );
+                } else if(array_key_exists("lastName", $authedUser)) {
+                    $lastName = $authedUser["lastName"];
+                    $fullName = trim(
+                        ($lastName ?? "")
                     );
                 }
+//                if (array_key_exists("name", $authedUser) || array_key_exists("name", $authedUser)) {
+//                    $user["name"] = $authedUser["name"];
+//                    $fullName = trim(
+//                        ($user["name"]['firstName'] ?? "")
+//                        . " "
+//                        . ($user["name"]['lastName'] ?? "")
+//                    );
+//                }
 
                 $userContract = (new \Laravel\Socialite\Two\User())
                     ->setRaw($authedUser)
