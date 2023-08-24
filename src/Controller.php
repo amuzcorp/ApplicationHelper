@@ -809,6 +809,10 @@ class Controller extends BaseController
     private function arrangeUserInfo($user,$request){
         $user->addVisible('email');
         $user->addVisible('login_id');
+        if(!$user->country) {
+            $user->country = 'kr';
+        }
+        $user->addVisible('country');
 
         $user_groups = $user->groups;
         $user->setRelation('groups', $user->groups->keyBy('id'));
