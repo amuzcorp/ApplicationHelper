@@ -66,7 +66,7 @@ class RegisterController extends XeRegisterController
 
     public function postRegister(Request $request){
         $checkEmailLGE = explode("@",$request->get('email','@'));
-        if($checkEmailLGE[1] != "lge.com"){
+        if($checkEmailLGE[1] != "lge.com" && $checkEmailLGE[1] != "lgepartner.com" && $checkEmailLGE[1] != "lge.client.com") {
             return redirect()->back()->with('alert', ['type' => 'failed', 'message' => 'LG전자 EP계정으로만 가입할 수 있습니다.']);
         }
 
